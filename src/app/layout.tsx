@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="h-full">
       <head>
-        <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/logo.jpeg" />
       </head>
       <body className="h-full overflow-x-hidden" style={{ background: "var(--background)" }}>
         <ThemeProvider>

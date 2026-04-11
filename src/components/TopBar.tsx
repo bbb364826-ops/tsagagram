@@ -30,7 +30,7 @@ export default function TopBar() {
       {isHome ? (
         <>
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Tsagagram" width={28} height={28} className="rounded-lg object-contain" />
+            <Image src="/logo.jpeg" alt="Tsagagram" width={28} height={28} className="rounded-lg object-contain" />
             <span className="text-lg font-bold" style={{ color: "var(--navy)" }}>Tsagagram</span>
           </Link>
           <div className="flex items-center gap-4">

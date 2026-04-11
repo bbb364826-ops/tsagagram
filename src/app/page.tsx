@@ -117,7 +117,7 @@ export default function Home() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] px-6 text-center">
         <div className="w-24 h-24 rounded-3xl overflow-hidden mb-4 shadow-xl">
-          <Image src="/logo.png" alt="Tsagagram" width={96} height={96} className="object-contain w-full h-full" />
+          <Image src="/logo.jpeg" alt="Tsagagram" width={96} height={96} className="object-contain w-full h-full" />
         </div>
         <h2 className="text-2xl font-bold mb-1" style={{ color: "var(--navy)" }}>Tsagagram</h2>
         <p className="text-sm mb-8" style={{ color: "var(--gray-mid)" }}>Visual Storytelling Platform</p>

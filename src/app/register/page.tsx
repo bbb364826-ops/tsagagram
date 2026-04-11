@@ -33,7 +33,7 @@ export default function Register() {
     <div className="min-h-screen flex flex-col items-center justify-center px-6 pb-20" style={{ background: "var(--background)" }}>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <Image src="/logo.png" alt="Tsagagram" width={80} height={80} className="rounded-2xl object-contain mb-3" />
+          <Image src="/logo.jpeg" alt="Tsagagram" width={80} height={80} className="rounded-2xl object-contain mb-3" />
           <h1 className="text-2xl font-bold" style={{ color: "var(--navy)" }}>Create account</h1>
           <p className="text-sm mt-1 text-center" style={{ color: "var(--gray-mid)" }}>
             Sign up to see photos and videos from your friends.

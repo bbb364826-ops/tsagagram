@@ -83,7 +83,7 @@ export default function Sidebar() {
       style={{ background: "#fff", borderColor: "var(--border)" }}>
       {/* Logo */}
       <Link href="/" className="mb-8 flex items-center gap-3 px-3">
-        <Image src="/logo.png" alt="Tsagagram" width={36} height={36} className="rounded-xl object-contain" />
+        <Image src="/logo.jpeg" alt="Tsagagram" width={36} height={36} className="rounded-xl object-contain" />
         <span className="text-xl font-bold" style={{ color: "var(--navy)" }}>Tsagagram</span>
       </Link>
 
