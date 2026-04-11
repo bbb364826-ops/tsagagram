@@ -1,0 +1,521 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  username       String   @unique
+  email          String   @unique
+  password       String
+  name           String?
+  bio            String?
+  avatar         String?
+  website        String?
+  verified       Boolean  @default(false)
+  isPrivate      Boolean  @default(false)
+  lastSeen       DateTime?
+  totpSecret     String?
+  totpEnabled    Boolean  @default(false)
+  pronouns       String?
+  vanishMode       Boolean  @default(false)
+  pushSubscription String?
+  createdAt        DateTime @default(now())
+
+  posts              Post[]
+  stories            Story[]
+  storyViews         StoryView[]
+  highlights         StoryHighlight[]
+  likes              Like[]
+  commentLikes       CommentLike[]
+  comments           Comment[]
+  saves              Save[]
+  saveCollections    SaveCollection[]
+  followers          Follow[]            @relation("following")
+  following          Follow[]            @relation("follower")
+  sentRequests       FollowRequest[]     @relation("sentRequests")
+  receivedRequests   FollowRequest[]     @relation("receivedRequests")
+  blocked            Block[]             @relation("blocker")
+  blockedBy          Block[]             @relation("blocked")
+  muted              Mute[]              @relation("muter")
+  mutedBy            Mute[]              @relation("muted")
+  closeFriends       CloseFriend[]       @relation("owner")
+  asFriend           CloseFriend[]       @relation("friend")
+  notifications      Notification[]      @relation("receiver")
+  sent               Notification[]      @relation("sender")
+  messages           Message[]           @relation("sender")
+  received           Message[]           @relation("receiver")
+  postViews          PostView[]
+  groupMembers       GroupMember[]
+  groupPosts         GroupPost[]
+  liveStreams        LiveStream[]
+  broadcastChannels  BroadcastChannel[]
+  broadcastSubs      BroadcastSub[]
+  broadcastMessages  BroadcastMessage[]
+  productTags        ProductTag[]
+  messageReactions   MessageReaction[]
+  notes              Note[]
+  dmGroupMembers     DmGroupMember[]
+  dmGroupMessages    DmGroupMessage[]
+  hashtagFollows     HashtagFollow[]
+  savedAccounts      SavedAccount[]
+  sessions           Session[]
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  device     String?
+  ip         String?
+  createdAt  DateTime @default(now())
+  lastUsed   DateTime @default(now())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model HashtagFollow {
+  id        String   @id @default(cuid())
+  hashtag   String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hashtag])
+}
+
+model SavedAccount {
+  id        String   @id @default(cuid())
+  username  String
+  token     String
+  avatar    String?
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, username])
+}
+
+model Post {
+  id               String    @id @default(cuid())
+  images           String
+  caption          String?
+  location         String?
+  lat              Float?
+  lng              Float?
+  hashtags         String?
+  altText          String?
+  audioId          String?
+  filter           String?
+  pinned           Boolean   @default(false)
+  disableComments  Boolean   @default(false)
+  hideLikes        Boolean   @default(false)
+  archived         Boolean   @default(false)
+  collabUserId     String?
+  collabAccepted   Boolean   @default(false)
+  paidPartnership  Boolean   @default(false)
+  pinnedCommentId  String?
+  scheduledAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes       Like[]
+  comments    Comment[]
+  saves       Save[]
+  views       PostView[]
+  productTags ProductTag[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([archived, createdAt(sort: Desc)])
+  @@index([scheduledAt])
+}
+
+model PostView {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String?
+  postId    String
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model ProductTag {
+  id       String  @id @default(cuid())
+  name     String
+  price    Float
+  currency String  @default("GEL")
+  url      String?
+  x        Float
+  y        Float
+  postId   String
+  userId   String
+  post     Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Audio {
+  id       String @id @default(cuid())
+  title    String
+  artist   String
+  url      String
+  cover    String?
+  duration Int
+}
+
+model Story {
+  id        String   @id @default(cuid())
+  media     String
+  mediaType String   @default("image")
+  caption   String?
+  filter    String?
+  stickers  String?
+  forClose  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  highlights StoryHighlight[] @relation("HighlightStories")
+  views      StoryView[]
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  storyId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+}
+
+model StoryHighlight {
+  id        String   @id @default(cuid())
+  title     String
+  cover     String?
+  createdAt DateTime @default(now())
+
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stories Story[] @relation("HighlightStories")
+}
+
+model FollowRequest {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  fromId    String
+  toId      String
+  from      User     @relation("sentRequests", fields: [fromId], references: [id], onDelete: Cascade)
+  to        User     @relation("receivedRequests", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId])
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  blockerId String
+  blockedId String
+  blocker   User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+}
+
+model Mute {
+  id          String   @id @default(cuid())
+  mutePosts   Boolean  @default(true)
+  muteStories Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  muterId     String
+  mutedId     String
+  muter       User     @relation("muter", fields: [muterId], references: [id], onDelete: Cascade)
+  muted       User     @relation("muted", fields: [mutedId], references: [id], onDelete: Cascade)
+
+  @@unique([muterId, mutedId])
+}
+
+model SaveCollection {
+  id        String   @id @default(cuid())
+  name      String
+  cover     String?
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  saves     Save[]
+}
+
+model CloseFriend {
+  id       String @id @default(cuid())
+  ownerId  String
+  friendId String
+  owner    User   @relation("owner", fields: [ownerId], references: [id], onDelete: Cascade)
+  friend   User   @relation("friend", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, friendId])
+}
+
+model DmGroup {
+  id        String   @id @default(cuid())
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  creatorId String
+
+  members  DmGroupMember[]
+  messages DmGroupMessage[]
+}
+
+model DmGroupMember {
+  id       String   @id @default(cuid())
+  joinedAt DateTime @default(now())
+  userId   String
+  groupId  String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group    DmGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model DmGroupMessage {
+  id        String   @id @default(cuid())
+  text      String?
+  mediaUrl  String?
+  createdAt DateTime @default(now())
+  senderId  String
+  groupId   String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  group     DmGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  creatorId   String
+
+  members GroupMember[]
+  posts   GroupPost[]
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+  userId   String
+  groupId  String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model GroupPost {
+  id        String   @id @default(cuid())
+  images    String
+  caption   String?
+  createdAt DateTime @default(now())
+  userId    String
+  groupId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model LiveStream {
+  id        String    @id @default(cuid())
+  title     String
+  active    Boolean   @default(true)
+  viewers   Int       @default(0)
+  createdAt DateTime  @default(now())
+  endedAt   DateTime?
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  LiveMessage[]
+}
+
+model LiveMessage {
+  id           String     @id @default(cuid())
+  text         String
+  username     String
+  avatar       String?
+  createdAt    DateTime   @default(now())
+  liveStreamId String
+  liveStream   LiveStream @relation(fields: [liveStreamId], references: [id], onDelete: Cascade)
+}
+
+model BroadcastChannel {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscribers BroadcastSub[]
+  messages    BroadcastMessage[]
+}
+
+model BroadcastSub {
+  id        String           @id @default(cuid())
+  userId    String
+  channelId String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   BroadcastChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId])
+}
+
+model BroadcastMessage {
+  id        String           @id @default(cuid())
+  text      String?
+  mediaUrl  String?
+  reactions Int              @default(0)
+  createdAt DateTime         @default(now())
+  userId    String
+  channelId String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   BroadcastChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  commentId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@index([commentId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  userId    String
+  postId    String
+  parentId  String?
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parent    Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[]     @relation("CommentReplies")
+  likes     CommentLike[]
+
+  @@index([postId, createdAt])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Save {
+  id           String          @id @default(cuid())
+  createdAt    DateTime        @default(now())
+  userId       String
+  postId       String
+  collectionId String?
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post         Post            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  collection   SaveCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  followerId  String
+  followingId String
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  type       String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  receiverId String
+  senderId   String
+  postId     String?
+  commentId  String?
+  receiver   User     @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User     @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId, createdAt(sort: Desc)])
+  @@index([receiverId, read])
+}
+
+model Message {
+  id         String            @id @default(cuid())
+  text       String?
+  mediaUrl   String?
+  voiceUrl   String?
+  read       Boolean           @default(false)
+  deleted    Boolean           @default(false)
+  vanish     Boolean           @default(false)
+  isRequest  Boolean           @default(false)
+  replyToId  String?
+  createdAt  DateTime          @default(now())
+  senderId   String
+  receiverId String
+  sender     User              @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User              @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  reactions  MessageReaction[]
+
+  @@index([senderId, receiverId, createdAt(sort: Desc)])
+  @@index([receiverId, senderId, createdAt(sort: Desc)])
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  createdAt DateTime @default(now())
+  messageId String
+  userId    String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}

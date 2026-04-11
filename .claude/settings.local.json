@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(curl:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npx dotenv:*)",
+      "Bash(npx prisma:*)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(npx tsc:*)",
+      "Bash(mkdir -p \"C:/Users/tsaga/OneDrive/Documents/Projects/tsagagram/src/app/api/collections/[id]\")",
+      "Bash(mkdir -p \"C:/Users/tsaga/OneDrive/Documents/Projects/tsagagram/src/app/api/stories/[id]/views\")",
+      "Bash(mkdir -p \"C:/Users/tsaga/OneDrive/Documents/Projects/tsagagram/src/app/api/dm-groups/[id]\")",
+      "Bash(mkdir -p \"C:/Users/tsaga/OneDrive/Documents/Projects/tsagagram/src/app/api/posts/[id]/likes\")",
+      "Bash(mkdir -p \"C:/Users/tsaga/OneDrive/Documents/Projects/tsagagram/src/app/api/users/[username]/status\")",
+      "Bash(mkdir -p \"C:/Users/tsaga/OneDrive/Documents/Projects/tsagagram/src/app/api/stories/[id]\")",
+      "Bash(mkdir -p \"C:/Users/tsaga/OneDrive/Documents/Projects/tsagagram/src/app/api/users/[username]/tagged\")",
+      "Bash(mkdir -p \"C:/Users/tsaga/OneDrive/Documents/Projects/tsagagram/src/app/api/posts/[id]/share\")",
+      "Bash(mkdir -p \"C:/Users/tsaga/OneDrive/Documents/Projects/tsagagram/src/app/api/posts/[id]/comments/[commentId]/pin\")",
+      "Bash(mkdir -p \"C:/Users/tsaga/OneDrive/Documents/Projects/tsagagram/src/app/api/hashtags/[tag]/follow\")",
+      "Bash(node -e ':*)",
+      "Bash(node:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(npx tsx:*)",
+      "Bash(powershell -Command \"Stop-Process -Name node -Force -ErrorAction SilentlyContinue\")",
+      "Bash(npm list:*)",
+      "Bash(npm install:*)",
+      "Bash(rm -rf .next)",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")"
+    ]
+  }
+}
