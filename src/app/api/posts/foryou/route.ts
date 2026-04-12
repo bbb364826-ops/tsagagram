@@ -25,13 +25,18 @@ export async function GET(req: NextRequest) {
   }
 
   // Get user's liked post hashtags & followed users
-  const [likedPosts, savedPosts, following] = await Promise.all([
+  const [likedPosts, savedPosts, following, blocked] = await Promise.all([
     prisma.like.findMany({ where: { userId: session.userId }, select: { postId: true }, take: 50 }),
     prisma.save.findMany({ where: { userId: session.userId }, select: { postId: true }, take: 50 }),
     prisma.follow.findMany({ where: { followerId: session.userId }, select: { followingId: true } }),
+    prisma.block.findMany({
+      where: { OR: [{ blockerId: session.userId }, { blockedId: session.userId }] },
+      select: { blockerId: true, blockedId: true },
+    }),
   ]);
 
-  const followingIds = following.map(f => f.followingId);
+  const blockedIds = blocked.flatMap(b => [b.blockerId, b.blockedId]).filter(id => id !== session.userId);
+  const followingIds = following.map(f => f.followingId).filter(id => !blockedIds.includes(id));
   const likedPostIds = likedPosts.map(l => l.postId);
   const savedPostIds = savedPosts.map(s => s.postId);
 
@@ -49,7 +54,7 @@ export async function GET(req: NextRequest) {
       },
     }) : [],
     prisma.post.findMany({
-      where: { archived: false, userId: { not: session.userId } },
+      where: { archived: false, userId: { not: session.userId, notIn: blockedIds } },
       orderBy: { likes: { _count: "desc" } },
       take: 20,
       select: { id: true, images: true, caption: true, location: true, createdAt: true, userId: true,
@@ -60,7 +65,7 @@ export async function GET(req: NextRequest) {
       },
     }),
     prisma.post.findMany({
-      where: { archived: false, userId: { not: session.userId } },
+      where: { archived: false, userId: { not: session.userId, notIn: blockedIds } },
       orderBy: { createdAt: "desc" },
       take: 20,
       select: { id: true, images: true, caption: true, location: true, createdAt: true, userId: true,

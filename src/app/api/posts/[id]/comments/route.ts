@@ -65,16 +65,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
-  // Mention notifications (@username in comment text)
+  // Mention notifications (@username in comment text) — batch lookup to avoid N+1
   const mentions = text.match(/@([\w\u10D0-\u10FF]+)/g) || [];
-  for (const mention of mentions) {
-    const username = mention.slice(1);
-    const mentioned = await prisma.user.findUnique({ where: { username }, select: { id: true } });
-    if (mentioned && mentioned.id !== session.userId) {
-      await prisma.notification.create({
-        data: { type: "mention", receiverId: mentioned.id, senderId: session.userId, postId, commentId: comment.id },
-      }).catch(() => {});
-    }
+  if (mentions.length > 0) {
+    const usernames = [...new Set(mentions.map((m: string) => m.slice(1)))];
+    const mentionedUsers = await prisma.user.findMany({
+      where: { username: { in: usernames } },
+      select: { id: true },
+    });
+    await Promise.all(
+      mentionedUsers
+        .filter(u => u.id !== session.userId)
+        .map(u => prisma.notification.create({
+          data: { type: "mention", receiverId: u.id, senderId: session.userId, postId, commentId: comment.id },
+        }).catch(() => {}))
+    );
   }
 
   return NextResponse.json({ ...comment, isLiked: false }, { status: 201 });

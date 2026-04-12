@@ -10,14 +10,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     where: { id },
     include: {
       user: { select: { id: true, username: true, avatar: true, verified: true } },
-      likes: { select: { userId: true } },
+      likes: session ? { where: { userId: session.userId }, select: { userId: true } } : false,
       saves: session ? { where: { userId: session.userId } } : false,
       productTags: true,
       comments: {
         where: { parentId: null },
         include: {
           user: { select: { id: true, username: true, avatar: true, verified: true } },
-          likes: { select: { userId: true } },
+          likes: session ? { where: { userId: session.userId }, select: { userId: true } } : false,
           _count: { select: { replies: true, likes: true } },
         },
         orderBy: { createdAt: "desc" },
@@ -43,14 +43,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     ...post,
     images: JSON.parse(post.images || "[]"),
     hashtags: (() => { try { const h = JSON.parse(post.hashtags || "[]"); return Array.isArray(h) ? h : []; } catch { return post.hashtags?.match(/#[\w\u10D0-\u10FF]+/g) || []; } })(),
-    isLiked: session ? post.likes.some(l => l.userId === session.userId) : false,
+    isLiked: session ? (post.likes as { userId: string }[]).length > 0 : false,
     isSaved: session ? (post.saves as { id: string }[]).length > 0 : false,
     collabUser,
     collabAccepted: post.collabAccepted,
     pinnedCommentId: post.pinnedCommentId || null,
     comments: post.comments.map(c => ({
       ...c,
-      isLiked: session ? c.likes.some(l => l.userId === session.userId) : false,
+      isLiked: session ? (c.likes as { userId: string }[] | false) !== false && (c.likes as { userId: string }[]).length > 0 : false,
     })),
   });
 }

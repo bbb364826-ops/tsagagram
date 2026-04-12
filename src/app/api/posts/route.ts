@@ -16,13 +16,16 @@ export async function GET(req: NextRequest) {
   if (tag) {
     whereClause.hashtags = { contains: tag };
   } else if (session) {
-    const following = await prisma.follow.findMany({
-      where: { followerId: session.userId },
-      select: { followingId: true },
-    });
-    const ids = [session.userId, ...following.map(f => f.followingId)];
+    const [following, blocked] = await Promise.all([
+      prisma.follow.findMany({ where: { followerId: session.userId }, select: { followingId: true } }),
+      prisma.block.findMany({
+        where: { OR: [{ blockerId: session.userId }, { blockedId: session.userId }] },
+        select: { blockerId: true, blockedId: true },
+      }),
+    ]);
+    const blockedIds = blocked.flatMap(b => [b.blockerId, b.blockedId]).filter(id => id !== session.userId);
+    const ids = [session.userId, ...following.map(f => f.followingId).filter(id => !blockedIds.includes(id))];
     whereClause.userId = { in: ids };
-    // Exclude private accounts the user doesn't follow (already covered by ids filter above)
   } else {
     // Logged-out: only show posts from public accounts
     whereClause.user = { isPrivate: false };

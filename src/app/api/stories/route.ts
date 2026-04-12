@@ -6,6 +6,8 @@ export async function GET() {
   const session = await getSession();
 
   const cutoff = new Date();
+  // Clean up expired stories
+  prisma.story.deleteMany({ where: { expiresAt: { lte: cutoff } } }).catch(() => {});
   const following = session
     ? await prisma.follow.findMany({ where: { followerId: session.userId }, select: { followingId: true } })
     : [];

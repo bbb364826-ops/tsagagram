@@ -120,8 +120,19 @@ export default function Create() {
         const fd = new FormData();
         fd.append("file", file);
         const res = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          alert(err.error || "ფოტოს ატვირთვა ვერ მოხდა. სცადე ხელახლა.");
+          setLoading(false);
+          return;
+        }
         const data = await res.json();
         if (data.url) urls.push(data.url);
+      }
+      if (!urls.length) {
+        alert("ფოტოს ატვირთვა ვერ მოხდა. სცადე ხელახლა.");
+        setLoading(false);
+        return;
       }
       const res = await fetch("/api/posts", {
         method: "POST",
@@ -143,14 +154,15 @@ export default function Create() {
       if (res.ok) {
         const post = await res.json();
         if (scheduledAt) {
-          // Scheduled posts go to archive/profile since they're not live yet
           router.push(`/u/${user.username}`);
         } else {
           router.push(`/p/${post.id}`);
         }
+      } else {
+        alert("პოსტის გამოქვეყნება ვერ მოხდა. სცადე ხელახლა.");
       }
     } catch {
-      alert("Error sharing post. Please try again.");
+      alert("კავშირის შეცდომა. ინტერნეტი შეამოწმე.");
     } finally {
       setLoading(false);
     }

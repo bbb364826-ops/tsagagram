@@ -65,6 +65,7 @@ export default function UserProfilePage() {
   const handleBlock = async () => {
     if (!profile) return;
     setShowOptions(false);
+    if (!blocked && !window.confirm(`${profile.username} დაბლოკვა?`)) return;
     const res = await fetch("/api/block", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ targetUserId: profile.id }),
@@ -241,8 +242,6 @@ export default function UserProfilePage() {
           <div className="col-span-3 py-16 flex flex-col items-center gap-3">
             <p className="text-sm" style={{ color: "var(--gray-mid)" }}>ეს ანგარიში ბლოკირებულია</p>
           </div>
-        ) : blocked ? (
-          <div className="col-span-3 py-12 text-center"><p style={{ color: "var(--gray-mid)" }}>ბლოკირებული</p></div>
         ) : profileTab === "tagged" ? (
           taggedPosts.length === 0
             ? <div className="col-span-3 py-12 text-center"><p style={{ color: "var(--gray-mid)" }}>არ არის</p></div>
@@ -252,9 +251,9 @@ export default function UserProfilePage() {
               </Link>
             ))
         ) : profileTab === "reels" ? (
-          posts.filter(p => p.image?.match?.(/\.(mp4|webm|mov)/i)).length === 0
+          posts.filter(p => p.image?.match?.(/\.(mp4|webm|mov)/i) || (p.image?.includes("cloudinary.com") && p.image?.includes("/video/"))).length === 0
             ? <div className="col-span-3 py-12 text-center"><p style={{ color: "var(--gray-mid)" }}>Reels არ არის</p></div>
-            : posts.filter(p => p.image?.match?.(/\.(mp4|webm|mov)/i)).map(p => (
+            : posts.filter(p => p.image?.match?.(/\.(mp4|webm|mov)/i) || (p.image?.includes("cloudinary.com") && p.image?.includes("/video/"))).map(p => (
               <Link key={p.id} href={`/p/${p.id}`} className="relative aspect-square block bg-black">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>

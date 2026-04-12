@@ -131,13 +131,16 @@ function MessagesContent() {
     es.onerror = () => {
       // Fallback to polling if SSE fails
       es.close();
-      pollRef.current = setInterval(() => {
-        loadMessages(u.id);
-        fetch(`/api/messages/typing?senderId=${u.id}`)
-          .then(r => r.json()).then(d => setIsTyping(d.typing)).catch(() => {});
-      }, 3000);
+      sseRef.current = null;
+      if (!pollRef.current) {
+        pollRef.current = setInterval(() => {
+          loadMessages(u.id);
+          fetch(`/api/messages/typing?senderId=${u.id}`)
+            .then(r => r.json()).then(d => setIsTyping(d.typing)).catch(() => {});
+        }, 3000);
+      }
     };
-    // Also poll typing since SSE only covers incoming messages
+    // Poll only for typing indicator (SSE handles new messages)
     pollRef.current = setInterval(() => {
       fetch(`/api/messages/typing?senderId=${u.id}`)
         .then(r => r.json()).then(d => setIsTyping(d.typing)).catch(() => {});
@@ -425,7 +428,7 @@ function MessagesContent() {
                       {/* Message bubble */}
                       {msg.mediaUrl && !msg.deleted ? (
                         <div className="rounded-2xl overflow-hidden" style={{ maxWidth: "220px", borderBottomRightRadius: isMe ? "4px" : undefined, borderBottomLeftRadius: !isMe ? "4px" : undefined }}>
-                          {msg.mediaUrl.match(/\.(mp4|webm|mov)$/i)
+                          {(msg.mediaUrl.match(/\.(mp4|webm|mov)$/i) || (msg.mediaUrl.includes("cloudinary.com") && msg.mediaUrl.includes("/video/")))
                             ? <video src={msg.mediaUrl} className="w-full rounded-2xl" controls />
                             : <Image src={msg.mediaUrl} alt="media" width={220} height={220} className="object-cover w-full" unoptimized />}
                         </div>

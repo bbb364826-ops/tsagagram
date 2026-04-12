@@ -434,7 +434,7 @@ export default function PostPage() {
         <div className="relative w-full aspect-square overflow-hidden"
           onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
           onClick={handleDoubleTap} style={{ cursor: "pointer" }}>
-          {images[imgIdx]?.match(/\.(mp4|webm|mov)$/i) ? (
+          {(images[imgIdx]?.match(/\.(mp4|webm|mov)$/i) || (images[imgIdx]?.includes("cloudinary.com") && images[imgIdx]?.includes("/video/"))) ? (
             <video src={images[imgIdx]} autoPlay muted loop playsInline className="w-full h-full object-cover" />
           ) : images[imgIdx] ? (
             <Image src={images[imgIdx]} alt={post.caption || "post"} fill className="object-cover" unoptimized />

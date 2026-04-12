@@ -195,7 +195,9 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
     setLoadingLikers(false);
   };
 
-  const isVideo = (url: string) => url.match(/\.(mp4|webm|mov)$/i);
+  const isVideo = (url: string) =>
+    url.match(/\.(mp4|webm|mov)$/i) ||
+    (url.includes("cloudinary.com") && url.includes("/video/"));
 
   return (
     <article className="border-b" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
