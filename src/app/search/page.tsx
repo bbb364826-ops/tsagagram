@@ -117,7 +117,7 @@ export default function SearchPage() {
               <button onClick={() => handleFollow(u.id)}
                 className="px-4 py-1.5 rounded-lg text-xs font-semibold"
                 style={{ background: u.isFollowing ? "var(--gray-light)" : "linear-gradient(135deg,var(--gold),var(--navy))", color: u.isFollowing ? "var(--navy)" : "white" }}>
-                {u.isFollowing ? "გამოწ." : "გამოწ."}
+                {u.isFollowing ? "მიყვება" : "გამოწ."}
               </button>
             </div>
           ))}

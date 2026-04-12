@@ -6,9 +6,17 @@ import { verifyTOTP } from "@/lib/totp";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, totpToken } = await req.json();
+    const { email, username, password, totpToken } = await req.json();
+    const identifier = email || username;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    if (!identifier) {
+      return NextResponse.json({ error: "შეიყვანე Email ან Username" }, { status: 400 });
+    }
+
+    // Support login with email OR username
+    const user = await prisma.user.findFirst({
+      where: { OR: [{ email: identifier }, { username: identifier }] },
+    });
     if (!user) {
       return NextResponse.json({ error: "მომხმარებელი ვერ მოიძებნა" }, { status: 404 });
     }
@@ -37,7 +45,7 @@ export async function POST(req: NextRequest) {
     prisma.session.create({ data: { token, device, ip, userId: user.id } }).catch(() => {});
 
     const res = NextResponse.json({ user: { id: user.id, username: user.username, name: user.name, avatar: user.avatar } });
-    res.cookies.set("token", token, { httpOnly: true, maxAge: 60 * 60 * 24 * 30, path: "/" });
+    res.cookies.set("token", token, { httpOnly: true, maxAge: 60 * 60 * 24 * 30, path: "/", sameSite: "lax" });
     return res;
   } catch (err) {
     console.error("[LOGIN ERROR]", err);

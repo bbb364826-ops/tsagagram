@@ -80,6 +80,8 @@ export default function BottomNav() {
     return () => clearInterval(iv);
   }, []);
 
+  const AUTH_PAGES = ["/login", "/register", "/forgot-password"];
+  if (AUTH_PAGES.includes(pathname)) return null;
   if (["/reels", "/camera", "/live"].some(p => pathname.startsWith(p))) return null;
 
   return (

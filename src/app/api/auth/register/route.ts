@@ -25,6 +25,6 @@ export async function POST(req: NextRequest) {
   const token = signToken({ userId: user.id, username: user.username });
 
   const res = NextResponse.json({ user: { id: user.id, username: user.username, name: user.name } });
-  res.cookies.set("token", token, { httpOnly: true, maxAge: 60 * 60 * 24 * 30, path: "/" });
+  res.cookies.set("token", token, { httpOnly: true, maxAge: 60 * 60 * 24 * 30, path: "/", sameSite: "lax" });
   return res;
 }

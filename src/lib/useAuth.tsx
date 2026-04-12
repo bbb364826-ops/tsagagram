@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 interface User {
@@ -29,17 +29,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/auth/me");
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (!res.ok) {
+        setUser(null);
+        return;
+      }
       const data = await res.json();
-      setUser(data);
+      // data can be null (no session) or a user object
+      setUser(data && data.id ? data : null);
     } catch {
       setUser(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Update lastSeen every 2 minutes while active
   useEffect(() => {
@@ -49,15 +54,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id);
   }, []);
 
-  const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+  const logout = useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch { /* ignore */ }
     setUser(null);
+    setLoading(false);
     router.push("/login");
-  };
+  }, [router]);
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh(); }, [refresh]);
 
-  return <AuthContext.Provider value={{ user, loading, refresh, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, refresh, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export const useAuth = () => useContext(AuthContext);

@@ -30,39 +30,32 @@ export default function Profile() {
   const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
   const avatarRef = useRef<HTMLInputElement>(null);
 
-  // Load saved accounts from localStorage
+  // Load saved accounts from server
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("tsagagram_accounts");
-      if (stored) setSavedAccounts(JSON.parse(stored));
-    } catch {}
-  }, []);
-
-  const saveCurrentAccount = () => {
     if (!user) return;
-    const token = document.cookie.match(/token=([^;]+)/)?.[1] || "";
-    if (!token) return;
-    const existing: SavedAccount[] = JSON.parse(localStorage.getItem("tsagagram_accounts") || "[]");
-    const updated = [
-      { username: user.username, token, avatar: user.avatar },
-      ...existing.filter(a => a.username !== user.username),
-    ].slice(0, 5);
-    localStorage.setItem("tsagagram_accounts", JSON.stringify(updated));
-    setSavedAccounts(updated);
-  };
+    // Auto-save current account on profile open
+    fetch("/api/auth/saved-accounts", { method: "POST" }).catch(() => {});
+    fetch("/api/auth/saved-accounts")
+      .then(r => r.ok ? r.json() : [])
+      .then(setSavedAccounts)
+      .catch(() => {});
+  }, [user]);
 
   const switchAccount = async (account: SavedAccount) => {
-    saveCurrentAccount();
-    // Set the saved token via cookie
-    document.cookie = `token=${account.token}; path=/; max-age=${60 * 60 * 24 * 30}`;
-    await refresh();
     setShowAccountSwitcher(false);
-    router.push("/profile");
+    const res = await fetch("/api/auth/saved-accounts", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: account.username }),
+    });
+    if (res.ok) {
+      await refresh();
+      router.push("/profile");
+    }
   };
 
   const addNewAccount = async () => {
-    saveCurrentAccount();
-    await logout();
+    setShowAccountSwitcher(false);
     router.push("/login");
   };
 
@@ -188,7 +181,7 @@ export default function Profile() {
                   </span>
                 )}
               </p>
-              <button onClick={() => { saveCurrentAccount(); setShowAccountSwitcher(true); }}
+              <button onClick={() => { setShowAccountSwitcher(true); }}
                 className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                 style={{ background: "var(--gray-light)", color: "var(--navy)" }}>
                 <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 8l4 4-4 4M7 8l-4 4 4 4M3 12h18"/></svg>

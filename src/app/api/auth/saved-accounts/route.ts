@@ -49,7 +49,7 @@ export async function PUT(req: NextRequest) {
 
   // Set the saved account's token as the new session
   const res = NextResponse.json({ ok: true, username });
-  res.cookies.set("token", saved.token, { httpOnly: true, maxAge: 60 * 60 * 24 * 30, path: "/" });
+  res.cookies.set("token", saved.token, { httpOnly: true, maxAge: 60 * 60 * 24 * 30, path: "/", sameSite: "lax" });
   return res;
 }
 
