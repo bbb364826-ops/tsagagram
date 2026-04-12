@@ -75,9 +75,11 @@ function MessagesContent() {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [selectedOnline, setSelectedOnline] = useState<{ online: boolean; lastSeen?: string } | null>(null);
+  const [incomingCall, setIncomingCall] = useState<{ callId: string; caller: { id: string; username: string; avatar?: string }; mode: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sseRef = useRef<EventSource | null>(null);
+  const callPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -87,7 +89,17 @@ function MessagesContent() {
 
   useEffect(() => {
     if (!loading && !user) { router.push("/login"); return; }
-    if (user) loadConvs();
+    if (user) {
+      loadConvs();
+      // Poll for incoming calls every 3s
+      callPollRef.current = setInterval(async () => {
+        const r = await fetch("/api/call").catch(() => null);
+        if (!r?.ok) return;
+        const data = await r.json();
+        if (data?.callId) setIncomingCall(data);
+      }, 3000);
+    }
+    return () => { if (callPollRef.current) clearInterval(callPollRef.current); };
   }, [user, loading]);
 
   useEffect(() => {
@@ -280,6 +292,40 @@ function MessagesContent() {
       <div className="w-8 h-8 rounded-full border-2 animate-spin" style={{ borderColor: "var(--gold)", borderTopColor: "transparent" }} />
     </div>
   );
+
+  // ─── INCOMING CALL MODAL ─────────────────────────────────────────────────
+  const IncomingCallModal = incomingCall ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.7)" }}>
+      <div className="rounded-3xl p-8 flex flex-col items-center gap-5 shadow-2xl" style={{ background: "var(--card)", minWidth: 280 }}>
+        <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-3xl" style={{ background: "var(--navy)" }}>
+          {incomingCall.caller.avatar
+            ? <img src={incomingCall.caller.avatar} alt="" className="w-full h-full object-cover" />
+            : incomingCall.caller.username[0].toUpperCase()}
+        </div>
+        <div className="text-center">
+          <p className="font-bold text-lg" style={{ color: "var(--navy)" }}>@{incomingCall.caller.username}</p>
+          <p className="text-sm" style={{ color: "var(--gray-mid)" }}>{incomingCall.mode === "video" ? "📹 ვიდეო ზარი" : "📞 ხმოვანი ზარი"}</p>
+        </div>
+        <div className="flex gap-6">
+          <button onClick={async () => {
+            await fetch(`/api/call/${incomingCall.callId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "rejected" }) }).catch(() => {});
+            setIncomingCall(null);
+          }} className="w-16 h-16 rounded-full flex items-center justify-center bg-red-500">
+            <svg width="28" height="28" fill="white" viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.25.2 2.45.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+          </button>
+          <button onClick={() => {
+            setIncomingCall(null);
+            router.push(`/call/${incomingCall.caller.id}?mode=${incomingCall.mode}&callId=${incomingCall.callId}`);
+          }} className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "#22c55e" }}>
+            <svg width="28" height="28" fill="white" viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.25.2 2.45.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+          </button>
+        </div>
+        <div className="flex gap-1">
+          {[0,1,2].map(i => <div key={i} className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--gold)", animationDelay: `${i*150}ms` }} />)}
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   // ─── CHAT VIEW ────────────────────────────────────────────────────────────
   if (selected) {
@@ -647,6 +693,7 @@ function MessagesContent() {
   // ─── CONVERSATIONS LIST ───────────────────────────────────────────────────
   return (
     <div style={{ background: "var(--card)" }}>
+      {IncomingCallModal}
       <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
         <p className="font-bold text-lg" style={{ color: "var(--navy)" }}>{user?.username}</p>
         <div className="flex gap-2">

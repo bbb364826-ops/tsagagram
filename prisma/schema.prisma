@@ -65,6 +65,8 @@ model User {
   hashtagFollows     HashtagFollow[]
   savedAccounts      SavedAccount[]
   sessions           Session[]
+  callerSessions     CallSession[]       @relation("caller")
+  calleeSessions     CallSession[]       @relation("callee")
 }
 
 model Session {
@@ -518,4 +520,23 @@ model Note {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
+}
+
+model CallSession {
+  id          String   @id @default(cuid())
+  callerId    String
+  calleeId    String
+  mode        String   @default("audio")
+  status      String   @default("ringing")
+  offer       String?
+  answer      String?
+  callerIce   String   @default("[]")
+  calleeIce   String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  caller      User     @relation("caller", fields: [callerId], references: [id], onDelete: Cascade)
+  callee      User     @relation("callee", fields: [calleeId], references: [id], onDelete: Cascade)
+
+  @@index([calleeId, status])
+  @@index([callerId, status])
 }
