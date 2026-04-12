@@ -271,7 +271,7 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
         {isVideo(post.images[imgIdx]) ? (
           <video src={post.images[imgIdx]} className="w-full h-full object-cover" autoPlay muted loop playsInline />
         ) : (
-          <Image src={post.images[imgIdx]} alt={post.caption || "post"} fill className="object-cover" sizes="100vw" loading={imgIdx === 0 ? "eager" : "lazy"} />
+          <Image src={post.images[imgIdx]} alt={post.caption || "post"} fill className="object-cover" sizes="100vw" loading={imgIdx === 0 ? "eager" : "lazy"} unoptimized />
         )}
 
         {heartAnim && (
