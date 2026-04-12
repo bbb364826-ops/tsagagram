@@ -83,10 +83,12 @@ export default function Profile() {
     if (!file) return;
     const fd = new FormData(); fd.append("file", file);
     const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const { url } = await res.json();
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.url) return;
     await fetch(`/api/users/${user!.username}`, {
       method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, avatar: url }),
+      body: JSON.stringify({ ...form, avatar: data.url }),
     });
     refresh();
   };

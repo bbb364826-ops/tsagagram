@@ -28,18 +28,34 @@ export default function Reels() {
   const lastTap = useRef(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const loadReels = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch("/api/posts/foryou?limit=20&offset=0");
+  const loadReels = useCallback(async (offset = 0) => {
+    if (offset === 0) setLoading(true);
+    const res = await fetch(`/api/posts/foryou?limit=30&offset=${offset}`);
     if (res.ok) {
       const data = await res.json();
       const arr = Array.isArray(data) ? data : [];
-      setReels(arr);
-      const likedMap: Record<string, boolean> = {};
-      const countMap: Record<string, number> = {};
-      arr.forEach((r: Reel) => { likedMap[r.id] = r.isLiked; countMap[r.id] = r._count.likes; });
-      setLiked(likedMap);
-      setLikeCounts(countMap);
+      // Filter for video posts only
+      const videoReels = arr.filter((r: Reel) =>
+        r.images?.[0]?.match(/\.(mp4|webm|mov)$/i) ||
+        (r.images?.[0]?.includes("cloudinary.com") && r.images[0].includes("/video/"))
+      );
+      if (offset === 0) {
+        setReels(videoReels);
+        const likedMap: Record<string, boolean> = {};
+        const countMap: Record<string, number> = {};
+        videoReels.forEach((r: Reel) => { likedMap[r.id] = r.isLiked; countMap[r.id] = r._count.likes; });
+        setLiked(likedMap);
+        setLikeCounts(countMap);
+      } else {
+        setReels(prev => {
+          const combined = [...prev, ...videoReels];
+          const likedMap: Record<string, boolean> = {};
+          const countMap: Record<string, number> = {};
+          combined.forEach((r: Reel) => { likedMap[r.id] = r.isLiked; countMap[r.id] = r._count.likes; });
+          setLiked(likedMap); setLikeCounts(countMap);
+          return combined;
+        });
+      }
     }
     setLoading(false);
   }, []);

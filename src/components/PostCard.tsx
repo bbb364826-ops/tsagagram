@@ -189,6 +189,7 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
   const openLikes = async () => {
     if (post.hideLikes && post.user.id !== currentUserId) return;
     setShowLikes(true);
+    setLikers([]);
     setLoadingLikers(true);
     const res = await fetch(`/api/posts/${post.id}/likes`);
     if (res.ok) setLikers(await res.json());
@@ -200,7 +201,7 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
     (url.includes("cloudinary.com") && url.includes("/video/"));
 
   return (
-    <article className="border-b" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+    <article className="border-b relative" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <Link href={`/u/${post.user.username}`} className="flex items-center gap-2.5">
@@ -394,7 +395,7 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
                 style={{ background: "var(--gray-light)", color: "var(--navy)" }} />
             </div>
             <div className="overflow-y-auto flex-1 py-2">
-              {following.filter((u: Liker) => u.username.includes(shareSearch)).map((u: Liker) => (
+              {following.filter((u: Liker) => u.username.toLowerCase().includes(shareSearch.toLowerCase())).map((u: Liker) => (
                 <button key={u.id} onClick={() => setShareSelected(prev => { const s = new Set(prev); s.has(u.id) ? s.delete(u.id) : s.add(u.id); return s; })}
                   className="w-full flex items-center gap-3 px-4 py-3">
                   <div className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center text-white font-bold flex-shrink-0" style={{ background: "var(--navy)" }}>

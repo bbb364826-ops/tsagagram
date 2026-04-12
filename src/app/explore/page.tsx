@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ interface Post { id: string; images: string[]; _count: { likes: number; comments
 interface TrendingTag { tag: string; count: number }
 
 type ExploreTab = "posts" | "reels" | "tags";
+const PAGE_SIZE = 30;
 
 export default function Explore() {
   const router = useRouter();
@@ -15,14 +16,37 @@ export default function Explore() {
   const [trendingTags, setTrendingTags] = useState<TrendingTag[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [exploreTab, setExploreTab] = useState<ExploreTab>("posts");
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loaderRef = useRef<HTMLDivElement>(null);
+
+  const fetchPosts = useCallback(async (reset = false) => {
+    const currentOffset = reset ? 0 : offset;
+    if (!reset) setLoadingMore(true);
+    const res = await fetch(`/api/posts/foryou?limit=${PAGE_SIZE}&offset=${currentOffset}`).catch(() => null);
+    const data = res?.ok ? await res.json() : [];
+    const arr = Array.isArray(data) ? data : [];
+    if (reset) { setPosts(arr); setOffset(PAGE_SIZE); }
+    else { setPosts(p => [...p, ...arr]); setOffset(o => o + PAGE_SIZE); }
+    setHasMore(arr.length === PAGE_SIZE);
+    setPostsLoading(false);
+    setLoadingMore(false);
+  }, [offset]);
 
   useEffect(() => {
-    fetch("/api/posts/foryou?limit=30&offset=0")
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setPosts(Array.isArray(data) ? data : []))
-      .finally(() => setPostsLoading(false));
+    setPostsLoading(true);
+    fetchPosts(true);
     fetch("/api/hashtags/trending").then(r => r.ok ? r.json() : []).then(setTrendingTags);
   }, []);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !loadingMore && !postsLoading) fetchPosts();
+    }, { threshold: 0.1 });
+    if (loaderRef.current) obs.observe(loaderRef.current);
+    return () => obs.disconnect();
+  }, [hasMore, loadingMore, postsLoading, fetchPosts]);
 
   return (
     <div style={{ background: "var(--card)" }}>
@@ -143,6 +167,13 @@ export default function Explore() {
             })}
           </div>
         )
+      )}
+
+      {/* Infinite scroll loader */}
+      {exploreTab === "posts" && !postsLoading && (
+        <div ref={loaderRef} className="flex justify-center py-6">
+          {loadingMore && <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--gold)", borderTopColor: "transparent" }} />}
+        </div>
       )}
     </div>
   );

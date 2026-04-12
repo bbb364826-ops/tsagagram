@@ -17,25 +17,32 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (!query.trim()) { setUsers([]); setHashtags([]); setPosts([]); return; }
-    timerRef.current = setTimeout(search, 350);
+    if (!query.trim()) { setUsers([]); setHashtags([]); setPosts([]); setLoading(false); return; }
+    setLoading(true);
+    timerRef.current = setTimeout(() => search(query, tab), 350);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [query, tab]);
 
-  const search = async () => {
-    setLoading(true);
-    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=${tab}`);
-    if (res.ok) {
-      const data = await res.json();
-      setUsers(data.users || []);
-      setHashtags(data.hashtags || []);
-      setPosts(data.posts || []);
+  const search = async (q: string, t: string) => {
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&type=${t}`, { signal: abortRef.current.signal });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data.users || []);
+        setHashtags(data.hashtags || []);
+        setPosts(data.posts || []);
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === "AbortError") return;
     }
     setLoading(false);
   };

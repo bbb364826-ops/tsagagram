@@ -22,15 +22,15 @@ function timeAgo(date: string) {
   if (w > 0) return `${w}კ`; if (d > 0) return `${d}დ`; if (h > 0) return `${h}სთ`; if (m > 0) return `${m}წთ`; return "ახლა";
 }
 
-const typeText: Record<string, (count: number) => string> = {
-  like: (n) => n > 1 ? "და სხვებმა მოიწონეს შენი პოსტი" : "მოიწონა შენი პოსტი",
-  comment: (n) => n > 1 ? "და სხვებმა დაწერეს კომენტარი" : "კომენტარი დაწერა შენს პოსტზე",
-  reply: (n) => n > 1 ? "და სხვებმა გიპასუხეს" : "გიპასუხა კომენტარზე",
-  follow: (n) => n > 1 ? "და სხვები გამოგყვნენ" : "გამოგყვა",
+const typeText: Record<string, (plural: boolean) => string> = {
+  like: (p) => p ? "მოიწონეს შენი პოსტი" : "მოიწონა შენი პოსტი",
+  comment: (p) => p ? "კომენტარი დაწერეს" : "კომენტარი დაწერა შენს პოსტზე",
+  reply: (p) => p ? "გიპასუხეს" : "გიპასუხა კომენტარზე",
+  follow: (p) => p ? "გამოგყვნენ" : "გამოგყვა",
   follow_request: () => "გთხოვს follow-ს",
-  mention: (n) => n > 1 ? "და სხვებმა მოგიხსენიეს კომენტარში" : "მოგიხსენია კომენტარში",
-  mention_caption: (n) => n > 1 ? "და სხვებმა მოგიხსენიეს პოსტში" : "მოგიხსენია პოსტის აღწერაში",
-  collab_invite: () => "გიწვევს Collab პოსტში — მიღება/უარყოფა",
+  mention: (p) => p ? "მოგიხსენიეს კომენტარში" : "მოგიხსენია კომენტარში",
+  mention_caption: (p) => p ? "მოგიხსენიეს პოსტში" : "მოგიხსენია პოსტის აღწერაში",
+  collab_invite: () => "გიწვევს Collab პოსტში",
   collab_accept: () => "მიიღო შენი Collab მოწვევა",
 };
 
@@ -153,9 +153,10 @@ export default function Notifications() {
           </p>
           {group.items.map(n => {
             const textFn = typeText[n.type] ?? (() => n.type);
-            const text = textFn(n.count);
             const primarySender = n.senders[0];
             const othersCount = n.count - n.senders.length;
+            const isPlural = n.senders.length > 1 || othersCount > 0;
+            const text = textFn(isPlural);
 
             return (
               <div key={n.id} className="flex items-center gap-3 px-4 py-3 border-b"

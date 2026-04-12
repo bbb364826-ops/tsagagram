@@ -243,7 +243,7 @@ export default function Create() {
   };
 
   const confirmTag = () => {
-    if (!pendingTagPos || !pendingTagForm.name.trim() || !pendingTagForm.price) return;
+    if (!pendingTagPos || !pendingTagForm.name.trim() || pendingTagForm.price === "") return;
     setProductTags(prev => [...prev, { id: Math.random().toString(36).slice(2), ...pendingTagForm, x: pendingTagPos.x, y: pendingTagPos.y }]);
     setPendingTagPos(null);
     setTaggingMode(false);
@@ -280,7 +280,7 @@ export default function Create() {
         </div>
         {/* Bottom controls */}
         <div className="relative z-10 mt-auto pb-16 flex flex-col items-center gap-4">
-          <p className="text-white text-xs opacity-70">{recording ? "누르다" : "Press and hold to record"}</p>
+          <p className="text-white text-xs opacity-70">{recording ? "გაუშვი გასაჩერებლად" : "დაჭერით ჩაწერა"}</p>
           <button
             onMouseDown={startRecording} onMouseUp={stopRecording}
             onTouchStart={e => { e.preventDefault(); startRecording(); }} onTouchEnd={stopRecording}
@@ -666,7 +666,7 @@ export default function Create() {
                   className="w-full px-3 py-2 rounded-lg text-sm outline-none mb-3"
                   style={{ background: "var(--gray-light)", color: "var(--navy)" }} />
                 <div className="flex gap-2">
-                  <button onClick={confirmTag} disabled={!pendingTagForm.name.trim() || !pendingTagForm.price}
+                  <button onClick={confirmTag} disabled={!pendingTagForm.name.trim() || pendingTagForm.price === ""}
                     className="flex-1 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40"
                     style={{ background: "var(--navy)" }}>
                     დამატება

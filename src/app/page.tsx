@@ -78,7 +78,7 @@ export default function Home() {
     if (res.ok) setSuggested(await res.json());
   };
 
-  useEffect(() => { loadPosts(true); loadSuggested(); }, [feedTab]);
+  useEffect(() => { setPosts([]); setPage(0); setHasMore(true); setFetching(true); loadPosts(true); loadSuggested(); }, [feedTab]);
 
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {

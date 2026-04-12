@@ -649,7 +649,6 @@ function MessagesContent() {
   // ─── CONVERSATIONS LIST ───────────────────────────────────────────────────
   return (
     <div style={{ background: "var(--card)" }}>
-      {IncomingCallModal}
       <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
         <p className="font-bold text-lg" style={{ color: "var(--navy)" }}>{user?.username}</p>
         <div className="flex gap-2">
