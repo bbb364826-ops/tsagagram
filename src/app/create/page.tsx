@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
@@ -73,6 +73,64 @@ export default function Create() {
   const [pendingTagForm, setPendingTagForm] = useState({ name: "", price: "", currency: "GEL", url: "" });
   const tagImageRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
+
+  // Reel recording state
+  const [showRecorder, setShowRecorder] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("environment");
+  const recVideoRef = useRef<HTMLVideoElement>(null);
+  const recStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (showRecorder) startCameraPreview();
+    else stopCameraPreview();
+    return () => stopCameraPreview();
+  }, [showRecorder, cameraFacing]);
+
+  const startCameraPreview = async () => {
+    stopCameraPreview();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: cameraFacing, width: { ideal: 1080 }, height: { ideal: 1920 } },
+        audio: true,
+      });
+      recStreamRef.current = stream;
+      if (recVideoRef.current) { recVideoRef.current.srcObject = stream; }
+    } catch {}
+  };
+
+  const stopCameraPreview = () => {
+    recStreamRef.current?.getTracks().forEach(t => t.stop());
+    recStreamRef.current = null;
+  };
+
+  const startRecording = () => {
+    if (!recStreamRef.current) return;
+    chunksRef.current = [];
+    const mr = new MediaRecorder(recStreamRef.current, { mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm" });
+    mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    mr.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: "video/webm" });
+      const file = new File([blob], `reel_${Date.now()}.webm`, { type: "video/webm" });
+      setShowRecorder(false);
+      handleFiles([file]);
+    };
+    mr.start(100);
+    mediaRecorderRef.current = mr;
+    setRecording(true);
+    setRecordingTime(0);
+    recTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
+  };
+
+  const stopRecording = () => {
+    if (recTimerRef.current) clearInterval(recTimerRef.current);
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+  };
 
   if (!user) { router.push("/login"); return null; }
 
@@ -198,6 +256,45 @@ export default function Create() {
     if (dx < -50 && activeIdx > 0) setActiveIdx(i => i - 1);
   };
 
+  // ─── REEL RECORDER ───────────────────────────────────────────────────────
+  if (showRecorder) {
+    const secs = recordingTime % 60;
+    const mins = Math.floor(recordingTime / 60);
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#000" }}>
+        <video ref={recVideoRef} autoPlay muted playsInline className="absolute inset-0 w-full h-full object-cover" style={{ transform: cameraFacing === "user" ? "scaleX(-1)" : "none" }} />
+        {/* Top controls */}
+        <div className="relative z-10 flex items-center justify-between px-4 pt-12 pb-4">
+          <button onClick={() => setShowRecorder(false)} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <svg width="20" height="20" fill="white" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" stroke="white" strokeWidth="2"/><line x1="6" y1="6" x2="18" y2="18" stroke="white" strokeWidth="2"/></svg>
+          </button>
+          {recording && (
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full" style={{ background: "rgba(232,83,74,0.9)" }}>
+              <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <span className="text-white text-sm font-bold">{mins.toString().padStart(2,"0")}:{secs.toString().padStart(2,"0")}</span>
+            </div>
+          )}
+          <button onClick={() => { setCameraFacing(f => f === "user" ? "environment" : "user"); }} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <svg width="20" height="20" fill="white" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15" stroke="white" strokeWidth="2" fill="none"/></svg>
+          </button>
+        </div>
+        {/* Bottom controls */}
+        <div className="relative z-10 mt-auto pb-16 flex flex-col items-center gap-4">
+          <p className="text-white text-xs opacity-70">{recording ? "누르다" : "Press and hold to record"}</p>
+          <button
+            onMouseDown={startRecording} onMouseUp={stopRecording}
+            onTouchStart={e => { e.preventDefault(); startRecording(); }} onTouchEnd={stopRecording}
+            className="w-20 h-20 rounded-full flex items-center justify-center transition-all active:scale-90"
+            style={{ background: recording ? "#e8534a" : "white", boxShadow: recording ? "0 0 0 6px rgba(232,83,74,0.4)" : "0 0 0 6px rgba(255,255,255,0.4)" }}>
+            {recording
+              ? <div className="w-8 h-8 rounded-md" style={{ background: "white" }} />
+              : <div className="w-16 h-16 rounded-full" style={{ background: "#e8534a" }} />}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ─── STEP 1: SELECT ───────────────────────────────────────────────────────
   if (step === "select") {
     return (
@@ -238,6 +335,11 @@ export default function Create() {
             <button className="w-full py-3 rounded-xl font-semibold text-white text-sm"
               style={{ background: "linear-gradient(135deg,var(--gold),var(--navy))" }}>
               ბიბლიოთეკიდან არჩევა
+            </button>
+            <button onClick={e => { e.stopPropagation(); setShowRecorder(true); }}
+              className="w-full py-3 rounded-xl font-semibold text-sm"
+              style={{ background: "var(--gray-light)", color: "var(--navy)" }}>
+              🎬 Reel-ის ჩაწერა
             </button>
             <button onClick={e => { e.stopPropagation(); router.push("/camera"); }}
               className="w-full py-3 rounded-xl font-semibold text-sm"

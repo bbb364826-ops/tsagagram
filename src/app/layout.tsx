@@ -3,6 +3,7 @@ import "./globals.css";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import PWASetup from "@/components/PWASetup";
+import GlobalCallListener from "@/components/GlobalCallListener";
 import { AuthProvider } from "@/lib/useAuth";
 import { ThemeProvider } from "@/lib/useTheme";
 import { LangProvider } from "@/lib/useLang";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <LangProvider>
           <AuthProvider>
             <PWASetup />
+            <GlobalCallListener />
             <TopBar />
             <main className="pt-14 pb-20 min-h-full">{children}</main>
             <BottomNav />
