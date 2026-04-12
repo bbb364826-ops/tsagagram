@@ -6,12 +6,12 @@ import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
 
 interface Notification {
-  id: string; type: string; read: boolean; createdAt: string; postId?: string; commentId?: string;
+  id: string; type: string; read: boolean; createdAt: string; postId?: string; commentId?: string; postImage?: string;
   sender: { username: string; avatar?: string };
 }
 
 interface GroupedNotification {
-  id: string; type: string; read: boolean; createdAt: string; postId?: string; commentId?: string;
+  id: string; type: string; read: boolean; createdAt: string; postId?: string; commentId?: string; postImage?: string;
   senders: { username: string; avatar?: string }[];
   count: number;
 }
@@ -50,7 +50,7 @@ function groupNotifications(notifs: Notification[]): GroupedNotification[] {
     } else {
       const g: GroupedNotification = {
         id: n.id, type: n.type, read: n.read,
-        createdAt: n.createdAt, postId: n.postId, commentId: n.commentId,
+        createdAt: n.createdAt, postId: n.postId, commentId: n.commentId, postImage: n.postImage,
         senders: [n.sender], count: 1,
       };
       seen.set(key, g);
@@ -186,10 +186,12 @@ export default function Notifications() {
                 </div>
 
                 {/* Post thumbnail */}
-                {n.postId && n.type !== "follow" && (
+                {n.postId && n.type !== "follow" && n.type !== "follow_request" && (
                   <Link href={`/p/${n.postId}`} className="flex-shrink-0">
                     <div className="w-11 h-11 rounded-lg overflow-hidden" style={{ background: "var(--gray-light)" }}>
-                      <div className="w-full h-full flex items-center justify-center text-xl">📷</div>
+                      {n.postImage
+                        ? <Image src={n.postImage} alt="" width={44} height={44} className="object-cover w-full h-full" unoptimized />
+                        : <div className="w-full h-full flex items-center justify-center text-xl">📷</div>}
                     </div>
                   </Link>
                 )}

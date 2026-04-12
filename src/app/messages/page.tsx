@@ -116,9 +116,9 @@ function MessagesContent() {
       setSelectedOnline({ online, lastSeen: d.lastSeen });
     }).catch(() => {});
 
-    // Replace polling with SSE
+    // Set up SSE for real-time updates; fall back to polling on error
     if (sseRef.current) sseRef.current.close();
-    if (pollRef.current) clearInterval(pollRef.current);
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     const es = new EventSource("/api/messages/stream");
     sseRef.current = es;
     es.onmessage = (e) => {
@@ -129,9 +129,9 @@ function MessagesContent() {
       } catch {}
     };
     es.onerror = () => {
-      // Fallback to polling if SSE fails
       es.close();
       sseRef.current = null;
+      // Fallback: poll for both messages and typing indicator
       if (!pollRef.current) {
         pollRef.current = setInterval(() => {
           loadMessages(u.id);
@@ -140,11 +140,6 @@ function MessagesContent() {
         }, 3000);
       }
     };
-    // Poll only for typing indicator (SSE handles new messages)
-    pollRef.current = setInterval(() => {
-      fetch(`/api/messages/typing?senderId=${u.id}`)
-        .then(r => r.json()).then(d => setIsTyping(d.typing)).catch(() => {});
-    }, 3000);
   };
 
   const closeChat = () => {

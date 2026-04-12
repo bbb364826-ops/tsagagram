@@ -51,7 +51,7 @@ export default function SearchPage() {
     <div style={{ background: "var(--card)", minHeight: "100vh" }}>
       {/* Search bar */}
       <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-3 border-b" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-        <button onClick={() => router.back()} style={{ color: "var(--navy)" }}>
+        <button onClick={() => window.history.length > 1 ? router.back() : router.push("/")} style={{ color: "var(--navy)" }}>
           <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <div className="flex-1 relative">
