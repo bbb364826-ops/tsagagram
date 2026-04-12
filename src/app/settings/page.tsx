@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useLang } from "@/lib/useLang";
 export const dynamic = "force-dynamic";
 
 function NotificationsSection({ renderBack }: { renderBack: (label: string) => React.ReactNode }) {
@@ -183,6 +184,7 @@ function AccountsSection({ renderBack, currentUsername, refresh, router }: {
 export default function Settings() {
   const { user, logout, refresh } = useAuth();
   const router = useRouter();
+  const { lang, setLang, t } = useLang();
   const [section, setSection] = useState<Section>(null);
 
   // Change password state
@@ -401,32 +403,32 @@ export default function Settings() {
   // Main settings
   const sections = [
     {
-      title: "ანგარიში",
+      title: t("account"),
       items: [
-        { icon: "🔒", label: "პაროლის შეცვლა", action: () => setSection("password") },
-        { icon: "🔐", label: "ორ-ფაქტორიანი ავთენტიფიკაცია", action: () => setSection("2fa") },
-        { icon: "👁️", label: "კონფიდენციალობა", action: () => setSection("privacy") },
-        { icon: "🔔", label: "შეტყობინებები", action: () => setSection("notifications") },
-        { icon: "👥", label: "ანგარიშების გადართვა", action: () => setSection("accounts") },
-        { icon: "📱", label: "აქტიური სესიები", href: "/sessions" },
+        { icon: "🔒", label: t("changePassword"), action: () => setSection("password") },
+        { icon: "🔐", label: t("twoFactor"), action: () => setSection("2fa") },
+        { icon: "👁️", label: t("privacy"), action: () => setSection("privacy") },
+        { icon: "🔔", label: t("pushNotifications"), action: () => setSection("notifications") },
+        { icon: "👥", label: lang === "en" ? "Switch accounts" : "ანგარიშების გადართვა", action: () => setSection("accounts") },
+        { icon: "📱", label: t("activeSessions"), href: "/sessions" },
       ],
     },
     {
-      title: "კონტენტი",
+      title: lang === "en" ? "Content" : "კონტენტი",
       items: [
-        { icon: "📥", label: "შენახული პოსტები", href: "/saved" },
-        { icon: "🗃️", label: "არქივი", href: "/archive" },
-        { icon: "🟢", label: "Close Friends", href: "/close-friends" },
-        { icon: "🏷️", label: "Trending ჰეშთეგები", href: "/explore" },
-        { icon: "📷", label: "AR კამერა", href: "/camera" },
+        { icon: "📥", label: t("saved"), href: "/saved" },
+        { icon: "🗃️", label: t("archive"), href: "/archive" },
+        { icon: "🟢", label: t("closeFriends"), href: "/close-friends" },
+        { icon: "🏷️", label: lang === "en" ? "Trending hashtags" : "Trending ჰეშთეგები", href: "/explore" },
+        { icon: "📷", label: t("camera"), href: "/camera" },
       ],
     },
     {
-      title: "სხვა",
+      title: lang === "en" ? "Other" : "სხვა",
       items: [
-        { icon: "🗺️", label: "ფოტოების რუქა", href: "/map" },
-        { icon: "📊", label: "ანალიტიკა", href: "/analytics" },
-        { icon: "📡", label: "Broadcast Channels", href: "/broadcast" },
+        { icon: "🗺️", label: t("map"), href: "/map" },
+        { icon: "📊", label: t("analytics"), href: "/analytics" },
+        { icon: "📡", label: t("broadcast"), href: "/broadcast" },
       ],
     },
   ];
@@ -441,7 +443,7 @@ export default function Settings() {
         </div>
         <div>
           <p className="font-semibold" style={{ color: "var(--navy)" }}>{user.username}</p>
-          <p className="text-xs" style={{ color: "var(--gray-mid)" }}>Tsagagram ანგარიში</p>
+          <p className="text-xs" style={{ color: "var(--gray-mid)" }}>Tsagagram {t("account")}</p>
         </div>
       </div>
 
@@ -477,9 +479,35 @@ export default function Settings() {
         </div>
       ))}
 
+      {/* Language switcher */}
+      <div className="mb-4">
+        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--gray-mid)" }}>
+          {t("language")}
+        </p>
+        <div className="rounded-xl overflow-hidden mx-3 flex" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+          <button onClick={() => setLang("en")}
+            className="flex-1 py-3.5 text-sm font-semibold transition-colors"
+            style={{
+              background: lang === "en" ? "var(--gold)" : "transparent",
+              color: lang === "en" ? "#fff" : "var(--navy)",
+            }}>
+            🇬🇧 {t("english")}
+          </button>
+          <div style={{ width: 1, background: "var(--border)" }} />
+          <button onClick={() => setLang("ka")}
+            className="flex-1 py-3.5 text-sm font-semibold transition-colors"
+            style={{
+              background: lang === "ka" ? "var(--gold)" : "transparent",
+              color: lang === "ka" ? "#fff" : "var(--navy)",
+            }}>
+            🇬🇪 {t("georgian")}
+          </button>
+        </div>
+      </div>
+
       <div className="mx-3 mb-4">
         <button onClick={logout} className="w-full py-3.5 rounded-xl text-sm font-semibold" style={{ background: "var(--card)", color: "#e8534a", border: "1px solid var(--border)" }}>
-          გასვლა
+          {t("logout")}
         </button>
       </div>
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/lib/useTheme";
+import { useLang } from "@/lib/useLang";
 
 const navItems = [
   {
@@ -51,23 +52,25 @@ const navItems = [
   },
 ];
 
-const moreItems = [
-  { href: "/saved", label: "შენახული", emoji: "🔖" },
-  { href: "/search", label: "ძიება", emoji: "🔍" },
-  { href: "/follow-requests", label: "Requests", emoji: "👥" },
-  { href: "/live", label: "Live", emoji: "📡" },
-  { href: "/groups", label: "Communities", emoji: "🏘️" },
-  { href: "/map", label: "Photo Map", emoji: "📍" },
-  { href: "/broadcast", label: "Channels", emoji: "📢" },
-  { href: "/analytics", label: "Insights", emoji: "📊" },
-  { href: "/camera", label: "AR Camera", emoji: "📸" },
-];
 
 export default function BottomNav() {
   const pathname = usePathname();
   const { dark, toggle } = useTheme();
+  const { t } = useLang();
   const [notifCount, setNotifCount] = useState(0);
   const [showMore, setShowMore] = useState(false);
+
+  const moreItems = [
+    { href: "/saved", label: t("saved"), emoji: "🔖" },
+    { href: "/search", label: t("search"), emoji: "🔍" },
+    { href: "/follow-requests", label: t("followRequests"), emoji: "👥" },
+    { href: "/live", label: t("live"), emoji: "📡" },
+    { href: "/groups", label: t("groups"), emoji: "🏘️" },
+    { href: "/map", label: t("map"), emoji: "📍" },
+    { href: "/broadcast", label: t("broadcast"), emoji: "📢" },
+    { href: "/analytics", label: t("analytics"), emoji: "📊" },
+    { href: "/camera", label: t("camera"), emoji: "📸" },
+  ];
 
   useEffect(() => {
     fetch("/api/notifications/count")
@@ -101,7 +104,7 @@ export default function BottomNav() {
               ))}
             </div>
             <div className="flex items-center justify-between px-2 py-3 rounded-2xl" style={{ background: "var(--gray-light)" }}>
-              <span className="text-sm font-semibold" style={{ color: "var(--navy)" }}>Dark Mode</span>
+              <span className="text-sm font-semibold" style={{ color: "var(--navy)" }}>{t("darkMode")}</span>
               <button onClick={toggle} className="w-12 h-6 rounded-full relative transition-colors" style={{ background: dark ? "var(--gold)" : "var(--border)" }}>
                 <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all" style={{ left: dark ? "calc(100% - 22px)" : "2px" }} />
               </button>

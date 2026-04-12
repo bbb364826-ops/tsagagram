@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import PWASetup from "@/components/PWASetup";
 import { AuthProvider } from "@/lib/useAuth";
 import { ThemeProvider } from "@/lib/useTheme";
+import { LangProvider } from "@/lib/useLang";
 
 export const metadata: Metadata = {
   title: "Tsagagram",
@@ -30,12 +31,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="h-full overflow-x-hidden" style={{ background: "var(--background)" }}>
         <ThemeProvider>
+          <LangProvider>
           <AuthProvider>
             <PWASetup />
             <TopBar />
             <main className="pt-14 pb-20 min-h-full">{children}</main>
             <BottomNav />
           </AuthProvider>
+          </LangProvider>
         </ThemeProvider>
       </body>
     </html>

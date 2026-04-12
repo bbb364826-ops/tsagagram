@@ -4,27 +4,8 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/lib/useTheme";
+import { useLang } from "@/lib/useLang";
 
-const titles: Record<string, string> = {
-  "/explore": "ძიება",
-  "/messages": "შეტყობინებები",
-  "/profile": "პროფილი",
-  "/reels": "Reels",
-  "/create": "ახალი პოსტი",
-  "/notifications": "შეტყობინებები",
-  "/settings": "პარამეტრები",
-  "/saved": "შენახული",
-  "/archive": "არქივი",
-  "/analytics": "ანალიტიკა",
-  "/map": "ფოტო რუქა",
-  "/broadcast": "Broadcast",
-  "/groups": "Communities",
-  "/live": "Live",
-  "/close-friends": "Close Friends",
-  "/follow-requests": "მოთხოვნები",
-  "/sessions": "სესიები",
-  "/search": "ძიება",
-};
 
 const AUTH_PAGES = ["/login", "/register", "/forgot-password"];
 
@@ -32,6 +13,28 @@ export default function TopBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { dark, toggle } = useTheme();
+  const { t } = useLang();
+
+  const titles: Record<string, string> = {
+    "/explore": t("explore"),
+    "/messages": t("messages"),
+    "/profile": t("profile"),
+    "/reels": t("reels"),
+    "/create": t("newPost"),
+    "/notifications": t("notifications"),
+    "/settings": t("settings"),
+    "/saved": t("saved"),
+    "/archive": t("archive"),
+    "/analytics": t("analytics"),
+    "/map": t("map"),
+    "/broadcast": t("broadcast"),
+    "/groups": t("groups"),
+    "/live": t("live"),
+    "/close-friends": t("closeFriends"),
+    "/follow-requests": t("followRequests"),
+    "/sessions": t("activeSessions"),
+    "/search": t("search"),
+  };
   const [unreadDMs, setUnreadDMs] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const isHome = pathname === "/";
