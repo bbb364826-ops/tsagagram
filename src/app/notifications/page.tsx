@@ -25,6 +25,7 @@ function timeAgo(date: string) {
 const typeText: Record<string, (plural: boolean) => string> = {
   like: (p) => p ? "მოიწონეს შენი პოსტი" : "მოიწონა შენი პოსტი",
   comment: (p) => p ? "კომენტარი დაწერეს" : "კომენტარი დაწერა შენს პოსტზე",
+  comment_like: (p) => p ? "მოიწონეს შენი კომენტარი" : "მოიწონა შენი კომენტარი",
   reply: (p) => p ? "გიპასუხეს" : "გიპასუხა კომენტარზე",
   follow: (p) => p ? "გამოგყვნენ" : "გამოგყვა",
   follow_request: () => "გთხოვს follow-ს",

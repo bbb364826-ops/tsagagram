@@ -148,7 +148,7 @@ export const translations = {
   callFailed: { en: "Connection failed", ka: "კავშირი ვერ დამყარდა" },
   callRejected: { en: "Call declined", ka: "უარყოფილია" },
   endCall: { en: "End", ka: "დასრულება" },
-  mute: { en: "Mute", ka: "დადუმება" },
+  muteCall: { en: "Mute", ka: "დადუმება" },
   unmute: { en: "Unmute", ka: "ჩართვა" },
   speaker: { en: "Speaker", ka: "სპიკერი" },
   earpiece: { en: "Earpiece", ka: "ყურსასმენი" },

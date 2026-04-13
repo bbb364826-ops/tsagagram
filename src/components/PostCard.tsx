@@ -61,9 +61,38 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
   const [shareSent, setShareSent] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [mentionSuggestions, setMentionSuggestions] = useState<{ id: string; username: string; avatar?: string }[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const lastTap = useRef(0);
   const touchStartX = useRef(0);
   const CAPTION_LIMIT = 120;
+
+  const handleCommentInput = (val: string) => {
+    setComment(val);
+    const match = val.match(/@([\w\u10D0-\u10FF]*)$/);
+    if (match) {
+      const q = match[1];
+      setMentionQuery(q);
+      if (q.length >= 1) {
+        fetch(`/api/users/search?q=${encodeURIComponent(q)}&limit=5`)
+          .then(r => r.ok ? r.json() : [])
+          .then(data => setMentionSuggestions(Array.isArray(data) ? data : []))
+          .catch(() => {});
+      } else {
+        setMentionSuggestions([]);
+      }
+    } else {
+      setMentionQuery(null);
+      setMentionSuggestions([]);
+    }
+  };
+
+  const insertMention = (username: string) => {
+    const newText = comment.replace(/@([\w\u10D0-\u10FF]*)$/, `@${username} `);
+    setComment(newText);
+    setMentionSuggestions([]);
+    setMentionQuery(null);
+  };
 
   const doLike = async () => {
     const prev = liked;
@@ -365,18 +394,34 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
       <p className="text-[11px] px-3 pb-2 uppercase tracking-wider font-medium" style={{ color: "var(--gray-mid)" }}>{timeAgo(post.createdAt)}</p>
 
       {!post.disableComments && (
-        <form onSubmit={handleComment} className="flex items-center gap-2 px-3 py-2.5 border-t" style={{ borderColor: "var(--border)" }}>
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: "var(--navy)" }}>
-            {currentUserId[0]?.toUpperCase() || "U"}
-          </div>
-          <input type="text" placeholder="Add a comment…" value={comment} onChange={e => setComment(e.target.value)}
-            className="flex-1 text-sm outline-none bg-transparent" style={{ color: "var(--navy)" }} />
-          {comment && (
-            <button type="submit" disabled={submitting} className="text-sm font-semibold" style={{ color: "var(--gold)" }}>
-              {submitting ? "…" : "Post"}
-            </button>
+        <div className="border-t relative" style={{ borderColor: "var(--border)" }}>
+          {mentionSuggestions.length > 0 && mentionQuery !== null && (
+            <div className="absolute bottom-full left-0 right-0 z-30 rounded-t-xl shadow-lg overflow-hidden"
+              style={{ background: "var(--card)", border: "1px solid var(--border)", borderBottom: "none" }}>
+              {mentionSuggestions.map(u => (
+                <button key={u.id} onMouseDown={e => { e.preventDefault(); insertMention(u.username); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:opacity-80">
+                  <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-white text-xs font-bold" style={{ background: "var(--navy)" }}>
+                    {u.avatar ? <Image src={u.avatar} alt="" width={28} height={28} className="object-cover w-full h-full" unoptimized /> : u.username[0].toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium" style={{ color: "var(--navy)" }}>@{u.username}</span>
+                </button>
+              ))}
+            </div>
           )}
-        </form>
+          <form onSubmit={handleComment} className="flex items-center gap-2 px-3 py-2.5">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: "var(--navy)" }}>
+              {currentUserId[0]?.toUpperCase() || "U"}
+            </div>
+            <input type="text" placeholder="Add a comment…" value={comment} onChange={e => handleCommentInput(e.target.value)}
+              className="flex-1 text-sm outline-none bg-transparent" style={{ color: "var(--navy)" }} />
+            {comment && (
+              <button type="submit" disabled={submitting} className="text-sm font-semibold" style={{ color: "var(--gold)" }}>
+                {submitting ? "…" : "Post"}
+              </button>
+            )}
+          </form>
+        </div>
       )}
 
       {/* Share to DM modal */}

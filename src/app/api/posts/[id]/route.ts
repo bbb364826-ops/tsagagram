@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (caption !== undefined) {
     updateData.caption = caption;
     updateData.location = location;
-    updateData.hashtags = JSON.stringify([...new Set((caption || "").match(/#\w+/g) || [])]);
+    updateData.hashtags = JSON.stringify([...new Set((caption || "").match(/#[\w\u10D0-\u10FF]+/g) || [])]);
   }
   if (archived !== undefined) updateData.archived = archived;
   if (hideLikes !== undefined) updateData.hideLikes = hideLikes;

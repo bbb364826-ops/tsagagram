@@ -17,6 +17,19 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ co
     return NextResponse.json({ liked: false });
   } else {
     await prisma.commentLike.create({ data: { userId: session.userId, commentId } });
+
+    // Notify comment author (fire-and-forget)
+    prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { userId: true, postId: true },
+    }).then(comment => {
+      if (comment && comment.userId !== session.userId) {
+        prisma.notification.create({
+          data: { type: "comment_like", receiverId: comment.userId, senderId: session.userId, postId: comment.postId, commentId },
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+
     return NextResponse.json({ liked: true });
   }
 }

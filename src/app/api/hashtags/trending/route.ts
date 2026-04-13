@@ -13,7 +13,13 @@ export async function GET() {
   const counts: Record<string, number> = {};
   for (const p of posts) {
     if (!p.hashtags) continue;
-    const tags = p.hashtags.split(/[\s,]+/).filter(t => t.startsWith("#")).map(t => t.slice(1).toLowerCase());
+    let tags: string[];
+    try {
+      const parsed = JSON.parse(p.hashtags);
+      tags = Array.isArray(parsed) ? parsed.map((t: string) => t.replace(/^#/, "").toLowerCase()) : [];
+    } catch {
+      tags = p.hashtags.split(/[\s,]+/).filter(t => t.startsWith("#")).map(t => t.slice(1).toLowerCase());
+    }
     for (const t of tags) { if (t) counts[t] = (counts[t] || 0) + 1; }
   }
 

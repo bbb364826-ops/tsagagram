@@ -21,7 +21,8 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState(0);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: "", bio: "", website: "", pronouns: "" });
-  const [posts, setPosts] = useState<{ id: string; image: string }[]>([]);
+  const [posts, setPosts] = useState<{ id: string; image: string; isVideo?: boolean }[]>([]);
+  const [savedPosts, setSavedPosts] = useState<{ id: string; image: string; isVideo?: boolean }[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [saving, setSaving] = useState(false);
   const [showNewHighlight, setShowNewHighlight] = useState(false);
@@ -60,15 +61,19 @@ export default function Profile() {
   };
 
   const loadData = async (username: string) => {
-    const [userRes, hlRes] = await Promise.all([
+    const [userRes, hlRes, savedRes] = await Promise.all([
       fetch(`/api/users/${username}`).then(r => r.json()),
       fetch(`/api/highlights?username=${username}`).then(r => r.ok ? r.json() : []),
+      fetch("/api/posts/saved").then(r => r.ok ? r.json() : []),
     ]);
+    const parseImage = (p: { id: string; images: string | string[] }) => {
+      const imgs = (() => { try { return typeof p.images === "string" ? JSON.parse(p.images) : p.images; } catch { return [p.images]; } })();
+      const url = Array.isArray(imgs) ? imgs[0] : imgs;
+      return { id: p.id, image: url as string, isVideo: typeof url === "string" && /\.(mp4|webm|mov)/i.test(url) };
+    };
     const rawPosts = userRes.posts || [];
-    setPosts(rawPosts.map((p: { id: string; images: string | string[] }) => ({
-      id: p.id,
-      image: (() => { try { const imgs = typeof p.images === "string" ? JSON.parse(p.images) : p.images; return Array.isArray(imgs) ? imgs[0] : imgs; } catch { return p.images; } })(),
-    })));
+    setPosts(rawPosts.map(parseImage));
+    setSavedPosts((savedRes || []).map(parseImage));
     setHighlights(hlRes);
   };
 
@@ -275,32 +280,46 @@ export default function Profile() {
         ))}
       </div>
 
-      {/* Posts grid */}
-      <div className="grid grid-cols-3 gap-0.5">
-        {posts.length === 0 ? (
-          <div className="col-span-3 py-12 flex flex-col items-center gap-2">
-            <svg width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" style={{ color: "var(--gray-mid)" }}>
-              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-            </svg>
-            <p className="text-sm" style={{ color: "var(--gray-mid)" }}>პოსტები არ არის</p>
-            <Link href="/create" className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>
-              პირველი პოსტი
-            </Link>
+      {/* Posts/Reels/Saved grid */}
+      {(() => {
+        const reels = posts.filter(p => p.isVideo);
+        const gridPosts = activeTab === 0 ? posts : activeTab === 1 ? reels : savedPosts;
+        const emptyMsg = activeTab === 0 ? "პოსტები არ არის" : activeTab === 1 ? "Reels არ არის" : "შენახული პოსტები არ არის";
+        return (
+          <div className="grid grid-cols-3 gap-0.5">
+            {gridPosts.length === 0 ? (
+              <div className="col-span-3 py-12 flex flex-col items-center gap-2">
+                <svg width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" style={{ color: "var(--gray-mid)" }}>
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <p className="text-sm" style={{ color: "var(--gray-mid)" }}>{emptyMsg}</p>
+                {activeTab === 0 && (
+                  <Link href="/create" className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>
+                    პირველი პოსტი
+                  </Link>
+                )}
+              </div>
+            ) : gridPosts.map(p => (
+              <Link key={p.id} href={`/p/${p.id}`} className="relative aspect-square block">
+                {p.image ? (
+                  p.isVideo ? (
+                    <div className="relative w-full h-full">
+                      <video src={p.image} muted loop className="w-full h-full object-cover" />
+                      <div className="absolute top-1.5 right-1.5">
+                        <svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+                      </div>
+                    </div>
+                  ) : (
+                    <Image src={p.image} alt="" fill className="object-cover" unoptimized />
+                  )
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-3xl" style={{ background: "var(--gray-light)" }}>📷</div>
+                )}
+              </Link>
+            ))}
           </div>
-        ) : posts.map(p => (
-          <Link key={p.id} href={`/p/${p.id}`} className="relative aspect-square block">
-            {p.image ? (
-              p.image.match(/\.(mp4|webm|mov)$/i) ? (
-                <video src={p.image} muted loop className="w-full h-full object-cover" />
-              ) : (
-                <Image src={p.image} alt="" fill className="object-cover" unoptimized />
-              )
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-3xl" style={{ background: "var(--gray-light)" }}>📷</div>
-            )}
-          </Link>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* Account switcher modal */}
       {showAccountSwitcher && (

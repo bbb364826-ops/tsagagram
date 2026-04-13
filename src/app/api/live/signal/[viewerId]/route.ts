@@ -3,11 +3,11 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // PUT: streamer sets offer for viewer; viewer sets answer; either adds ICE
-export async function PUT(req: NextRequest, { params }: { params: { viewerId: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ viewerId: string }> }) {
   const user = await getSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { viewerId } = params;
+  const { viewerId } = await params;
   const body = await req.json();
   const { streamId, offer, answer, streamerIce, viewerIce, status } = body;
 
@@ -42,11 +42,11 @@ export async function PUT(req: NextRequest, { params }: { params: { viewerId: st
 }
 
 // DELETE: remove signal (viewer left or stream ended)
-export async function DELETE(req: NextRequest, { params }: { params: { viewerId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ viewerId: string }> }) {
   const user = await getSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { viewerId } = params;
+  const { viewerId } = await params;
   const { searchParams } = new URL(req.url);
   const streamId = searchParams.get("streamId");
 

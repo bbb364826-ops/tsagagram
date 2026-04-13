@@ -68,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Mention notifications (@username in comment text) — batch lookup to avoid N+1
   const mentions = text.match(/@([\w\u10D0-\u10FF]+)/g) || [];
   if (mentions.length > 0) {
-    const usernames = [...new Set(mentions.map((m: string) => m.slice(1)))];
+    const usernames: string[] = [...new Set<string>(mentions.map((m: string) => m.slice(1)))];
     const mentionedUsers = await prisma.user.findMany({
       where: { username: { in: usernames } },
       select: { id: true },

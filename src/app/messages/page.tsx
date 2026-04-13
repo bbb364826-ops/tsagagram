@@ -67,6 +67,7 @@ function MessagesContent() {
   const [myNote, setMyNote] = useState("");
   const [noteInput, setNoteInput] = useState("");
   const [showNoteInput, setShowNoteInput] = useState(false);
+  const [otherNotes, setOtherNotes] = useState<{ id: string; text: string; user: { id: string; username: string; avatar?: string } }[]>([]);
   const [forwardTarget, setForwardTarget] = useState<string | null>(null);
   const [forwardConvs, setForwardConvs] = useState<Conversation[]>([]);
   const [forwardingSending, setForwardingSending] = useState(false);
@@ -75,6 +76,7 @@ function MessagesContent() {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [selectedOnline, setSelectedOnline] = useState<{ online: boolean; lastSeen?: string } | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sseRef = useRef<EventSource | null>(null);
@@ -89,8 +91,18 @@ function MessagesContent() {
     if (!loading && !user) { router.push("/login"); return; }
     if (user) {
       loadConvs();
+      loadNotes();
     }
   }, [user, loading]);
+
+  const loadNotes = async () => {
+    const res = await fetch("/api/notes");
+    if (!res.ok) return;
+    const notes = await res.json();
+    const mine = notes.find((n: { user: { id: string }; text: string }) => n.user.id === user?.id);
+    if (mine) { setMyNote(mine.text); setNoteInput(mine.text); }
+    setOtherNotes(notes.filter((n: { user: { id: string } }) => n.user.id !== user?.id));
+  };
 
   useEffect(() => {
     if (!openUsername || !user) return;
@@ -154,6 +166,7 @@ function MessagesContent() {
   useEffect(() => () => {
     if (pollRef.current) clearInterval(pollRef.current);
     if (sseRef.current) sseRef.current.close();
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
   }, []);
 
   const loadMessages = async (userId: string) => {
@@ -565,8 +578,11 @@ function MessagesContent() {
               onChange={e => {
                 setText(e.target.value);
                 if (selected) {
-                  fetch("/api/messages/typing", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recipientId: selected.id }) }).catch(() => {});
+                  fetch("/api/messages/typing", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recipientId: selected.id, typing: true }) }).catch(() => {});
                   if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                  typingTimerRef.current = setTimeout(() => {
+                    fetch("/api/messages/typing", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recipientId: selected.id, typing: false }) }).catch(() => {});
+                  }, 3000);
                 }
               }}
               className="flex-1 px-4 py-2.5 rounded-full text-sm outline-none"
@@ -649,6 +665,10 @@ function MessagesContent() {
   // ─── CONVERSATIONS LIST ───────────────────────────────────────────────────
   return (
     <div style={{ background: "var(--card)" }}>
+      {toastMsg && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full text-white text-sm font-semibold shadow-lg pointer-events-none"
+          style={{ background: "rgba(0,0,0,0.8)" }}>{toastMsg}</div>
+      )}
       <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
         <p className="font-bold text-lg" style={{ color: "var(--navy)" }}>{user?.username}</p>
         <div className="flex gap-2">
@@ -657,7 +677,7 @@ function MessagesContent() {
               <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
             </svg>
           </button>
-          <button onClick={() => { const name = prompt("ჯგუფის სახელი:"); if (name) alert("ჯგუფის ფუნქცია მალე!"); }} style={{ color: "var(--navy)" }}>
+          <button onClick={() => { setToastMsg("ჯგუფები მალე!"); setTimeout(() => setToastMsg(null), 2500); }} style={{ color: "var(--navy)" }}>
             <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
               <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
@@ -699,15 +719,23 @@ function MessagesContent() {
             </div>
             <span className="text-xs" style={{ color: "var(--gray-mid)" }}>Notes</span>
           </button>
-          {/* Others' notes (from convs) */}
-          {convs.slice(0, 6).map(c => (
-            <div key={c.user.id} className="flex flex-col items-center gap-1 flex-shrink-0">
-              <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white font-bold"
-                style={{ background: "var(--navy)", border: "2px solid var(--border)" }}>
-                {c.user.username[0].toUpperCase()}
+          {/* Others' notes */}
+          {otherNotes.map(n => (
+            <button key={n.id} onClick={() => openChat(n.user)} className="flex flex-col items-center gap-1 flex-shrink-0">
+              <div className="relative">
+                <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white font-bold"
+                  style={{ background: "var(--navy)", border: "2px solid var(--border)" }}>
+                  {n.user.avatar
+                    ? <Image src={n.user.avatar} alt="" width={56} height={56} className="object-cover w-full h-full rounded-full" />
+                    : n.user.username[0].toUpperCase()}
+                </div>
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded-full text-xs whitespace-nowrap max-w-[120px] truncate"
+                  style={{ background: "var(--card)", border: "1.5px solid var(--border)", color: "var(--navy)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+                  {n.text}
+                </div>
               </div>
-              <span className="text-xs truncate w-14 text-center" style={{ color: "var(--gray-mid)" }}>{c.user.username}</span>
-            </div>
+              <span className="text-xs truncate w-14 text-center" style={{ color: "var(--gray-mid)" }}>{n.user.username}</span>
+            </button>
           ))}
         </div>
       </div>
@@ -726,7 +754,16 @@ function MessagesContent() {
             <div className="flex gap-3">
               <button onClick={() => setShowNoteInput(false)} className="flex-1 py-3 rounded-xl text-sm font-semibold"
                 style={{ background: "var(--gray-light)", color: "var(--navy)" }}>გაუქმება</button>
-              <button onClick={() => { setMyNote(noteInput); setShowNoteInput(false); }}
+              <button onClick={async () => {
+                if (noteInput.trim()) {
+                  const res = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: noteInput.trim() }) });
+                  if (res.ok) setMyNote(noteInput.trim());
+                } else {
+                  await fetch("/api/notes", { method: "DELETE" });
+                  setMyNote("");
+                }
+                setShowNoteInput(false);
+              }}
                 className="flex-1 py-3 rounded-xl text-sm font-semibold text-white"
                 style={{ background: "linear-gradient(135deg,var(--gold),var(--navy))" }}>
                 {noteInput ? "გაგზავნა" : "წაშლა"}

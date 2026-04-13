@@ -102,7 +102,7 @@ function NotificationsSection({ renderBack }: { renderBack: (label: string) => R
   );
 }
 
-type Section = null | "password" | "privacy" | "notifications" | "2fa" | "accounts";
+type Section = null | "password" | "privacy" | "notifications" | "2fa" | "accounts" | "delete";
 
 function AccountsSection({ renderBack, currentUsername, refresh, router }: {
   renderBack: (label: string) => React.ReactNode;
@@ -175,6 +175,60 @@ function AccountsSection({ renderBack, currentUsername, refresh, router }: {
           className="w-full py-3 rounded-xl text-sm font-semibold mt-4"
           style={{ background: "var(--card)", color: "var(--navy)", border: "1px solid var(--border)" }}>
           + ახალი ანგარიში
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DeleteAccountSection({ renderBack, router }: {
+  renderBack: (label: string) => React.ReactNode;
+  router: ReturnType<typeof useRouter>;
+}) {
+  const { logout } = useAuth();
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleDelete = async () => {
+    if (!password) { setError("პაროლი სავალდებულოა"); return; }
+    if (confirm !== "DELETE") { setError("დაწერე DELETE დასადასტურებლად"); return; }
+    setDeleting(true); setError("");
+    const res = await fetch("/api/auth/me", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    if (res.ok) {
+      await logout();
+      router.push("/login");
+    } else {
+      const d = await res.json();
+      setError(d.error || "შეცდომა მოხდა");
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div style={{ background: "var(--background)" }}>
+      {renderBack("ანგარიშის წაშლა")}
+      <div className="px-4 py-6">
+        <div className="rounded-2xl p-4 mb-6" style={{ background: "#fff0ef", border: "1px solid #f8b4b4" }}>
+          <p className="font-bold text-sm mb-1" style={{ color: "#c0392b" }}>⚠️ გაფრთხილება</p>
+          <p className="text-sm" style={{ color: "#c0392b" }}>ანგარიშის წაშლა გამოიწვევს ყველა პოსტის, ისტორიის, კომენტარის და შეტყობინების სამუდამო წაშლას. ეს მოქმედება შეუქცევადია.</p>
+        </div>
+        <input type="password" placeholder="შეიყვანე პაროლი" value={password} onChange={e => setPassword(e.target.value)}
+          className="w-full px-4 py-3 rounded-xl text-sm outline-none mb-3"
+          style={{ background: "var(--gray-light)", color: "var(--navy)", border: "1px solid var(--border)" }} />
+        <input type="text" placeholder={`დაწერე DELETE`} value={confirm} onChange={e => setConfirm(e.target.value)}
+          className="w-full px-4 py-3 rounded-xl text-sm outline-none mb-4"
+          style={{ background: "var(--gray-light)", color: "var(--navy)", border: "1px solid var(--border)" }} />
+        {error && <p className="text-sm text-center mb-3" style={{ color: "#e8534a" }}>{error}</p>}
+        <button onClick={handleDelete} disabled={deleting || confirm !== "DELETE"}
+          className="w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
+          style={{ background: "#e8534a" }}>
+          {deleting ? "იშლება..." : "ანგარიშის სამუდამოდ წაშლა"}
         </button>
       </div>
     </div>
@@ -400,6 +454,10 @@ export default function Settings() {
     <AccountsSection renderBack={renderBack} currentUsername={user.username} refresh={refresh} router={router} />
   );
 
+  if (section === "delete") return (
+    <DeleteAccountSection renderBack={renderBack} router={router} />
+  );
+
   // Main settings
   const sections = [
     {
@@ -505,9 +563,15 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="mx-3 mb-4">
+      <div className="mx-3 mb-2">
         <button onClick={logout} className="w-full py-3.5 rounded-xl text-sm font-semibold" style={{ background: "var(--card)", color: "#e8534a", border: "1px solid var(--border)" }}>
           {t("logout")}
+        </button>
+      </div>
+
+      <div className="mx-3 mb-4">
+        <button onClick={() => setSection("delete")} className="w-full py-3.5 rounded-xl text-sm font-medium" style={{ background: "transparent", color: "var(--gray-mid)" }}>
+          {lang === "en" ? "Delete account" : "ანგარიშის წაშლა"}
         </button>
       </div>
 

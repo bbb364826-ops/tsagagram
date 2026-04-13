@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Get user's liked post hashtags & followed users
-  const [likedPosts, savedPosts, following, blocked] = await Promise.all([
+  const [likedPosts, savedPosts, following, blocked, hashtagFollows] = await Promise.all([
     prisma.like.findMany({ where: { userId: session.userId }, select: { postId: true }, take: 50 }),
     prisma.save.findMany({ where: { userId: session.userId }, select: { postId: true }, take: 50 }),
     prisma.follow.findMany({ where: { followerId: session.userId }, select: { followingId: true } }),
@@ -33,12 +33,14 @@ export async function GET(req: NextRequest) {
       where: { OR: [{ blockerId: session.userId }, { blockedId: session.userId }] },
       select: { blockerId: true, blockedId: true },
     }),
+    prisma.hashtagFollow.findMany({ where: { userId: session.userId }, select: { hashtag: true } }),
   ]);
 
   const blockedIds = blocked.flatMap(b => [b.blockerId, b.blockedId]).filter(id => id !== session.userId);
   const followingIds = following.map(f => f.followingId).filter(id => !blockedIds.includes(id));
   const likedPostIds = likedPosts.map(l => l.postId);
   const savedPostIds = savedPosts.map(s => s.postId);
+  const followedHashtags = new Set(hashtagFollows.map(h => h.hashtag.replace(/^#/, "").toLowerCase()));
 
   // Fetch candidate posts (mix: followed + popular + recent)
   const [followedPosts, popularPosts, recentPosts] = await Promise.all([
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest) {
       where: { userId: { in: followingIds }, archived: false },
       orderBy: { createdAt: "desc" },
       take: 20,
-      select: { id: true, images: true, caption: true, location: true, createdAt: true, userId: true,
+      select: { id: true, images: true, caption: true, location: true, createdAt: true, userId: true, hashtags: true,
         user: { select: { id: true, username: true, avatar: true, verified: true } },
         _count: { select: { likes: true, comments: true, views: true } },
         likes: { where: { userId: session.userId }, select: { id: true } },
@@ -57,7 +59,7 @@ export async function GET(req: NextRequest) {
       where: { archived: false, userId: { not: session.userId, notIn: blockedIds } },
       orderBy: { likes: { _count: "desc" } },
       take: 20,
-      select: { id: true, images: true, caption: true, location: true, createdAt: true, userId: true,
+      select: { id: true, images: true, caption: true, location: true, createdAt: true, userId: true, hashtags: true,
         user: { select: { id: true, username: true, avatar: true, verified: true } },
         _count: { select: { likes: true, comments: true, views: true } },
         likes: { where: { userId: session.userId }, select: { id: true } },
@@ -68,7 +70,7 @@ export async function GET(req: NextRequest) {
       where: { archived: false, userId: { not: session.userId, notIn: blockedIds } },
       orderBy: { createdAt: "desc" },
       take: 20,
-      select: { id: true, images: true, caption: true, location: true, createdAt: true, userId: true,
+      select: { id: true, images: true, caption: true, location: true, createdAt: true, userId: true, hashtags: true,
         user: { select: { id: true, username: true, avatar: true, verified: true } },
         _count: { select: { likes: true, comments: true, views: true } },
         likes: { where: { userId: session.userId }, select: { id: true } },
@@ -78,14 +80,25 @@ export async function GET(req: NextRequest) {
   ]);
 
   // Score each post
-  const score = (p: typeof followedPosts[0]) => {
+  const score = (p: typeof followedPosts[0] & { hashtags?: string | null }) => {
     const isFollowed = followingIds.includes(p.userId);
     const isLiked = likedPostIds.includes(p.id);
     const isSaved = savedPostIds.includes(p.id);
     const ageHours = (Date.now() - new Date(p.createdAt).getTime()) / 3600000;
     const views = (p._count as { likes: number; comments: number; views?: number }).views ?? 0;
     const engagementScore = (p._count.likes * 2 + p._count.comments * 3 + views) / Math.max(1, ageHours);
-    return (isFollowed ? 50 : 0) + (isLiked ? 10 : 0) + (isSaved ? 5 : 0) + engagementScore;
+
+    // Hashtag follow boost
+    let hashtagBoost = 0;
+    if (followedHashtags.size > 0 && p.hashtags) {
+      try {
+        const tags: string[] = JSON.parse(p.hashtags);
+        const hasFollowedTag = tags.some(t => followedHashtags.has(t.replace(/^#/, "").toLowerCase()));
+        if (hasFollowedTag) hashtagBoost = 20;
+      } catch { /* ignore */ }
+    }
+
+    return (isFollowed ? 50 : 0) + (isLiked ? 10 : 0) + (isSaved ? 5 : 0) + hashtagBoost + engagementScore;
   };
 
   // Deduplicate and sort
