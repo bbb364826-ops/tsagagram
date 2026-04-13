@@ -63,6 +63,8 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
   const [replyText, setReplyText] = useState("");
   const [mentionSuggestions, setMentionSuggestions] = useState<{ id: string; username: string; avatar?: string }[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(0);
   const lastTap = useRef(0);
   const touchStartX = useRef(0);
   const CAPTION_LIMIT = 120;
@@ -111,6 +113,14 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
     if (now - lastTap.current < 350) {
       if (!liked) doLike();
       setHeartAnim(true); setTimeout(() => setHeartAnim(false), 900);
+    } else {
+      // single tap — open lightbox after short delay to allow double-tap detection
+      setTimeout(() => {
+        if (Date.now() - lastTap.current >= 340) {
+          setLightboxIdx(imgIdx);
+          setLightbox(true);
+        }
+      }, 350);
     }
     lastTap.current = now;
   };
@@ -230,6 +240,7 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
     (url.includes("cloudinary.com") && url.includes("/video/"));
 
   return (
+    <>
     <article className="border-b relative" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5">
@@ -499,5 +510,79 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
 
       <style>{`@keyframes heartPop { 0%{transform:scale(0);opacity:1} 50%{transform:scale(1.3);opacity:1} 100%{transform:scale(1);opacity:0} }`}</style>
     </article>
+
+    {/* Lightbox */}
+    {lightbox && (
+      <div
+        className="fixed inset-0 z-[999] flex items-center justify-center"
+        style={{ background: "rgba(0,0,0,0.95)" }}
+        onClick={() => setLightbox(false)}
+      >
+        {/* Close button */}
+        <button
+          className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full"
+          style={{ background: "rgba(255,255,255,0.15)" }}
+          onClick={() => setLightbox(false)}
+        >
+          <svg width="20" height="20" fill="none" stroke="white" strokeWidth="2.5" viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+
+        {/* Image counter */}
+        {post.images.length > 1 && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white text-sm font-medium"
+            style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
+            {lightboxIdx + 1} / {post.images.length}
+          </div>
+        )}
+
+        {/* Image */}
+        <div
+          className="relative w-full h-full flex items-center justify-center"
+          onClick={e => e.stopPropagation()}
+        >
+          {isVideo(post.images[lightboxIdx]) ? (
+            <video
+              src={post.images[lightboxIdx]}
+              className="max-w-full max-h-full object-contain"
+              controls autoPlay playsInline
+              style={{ maxHeight: "90vh" }}
+            />
+          ) : (
+            <img
+              src={post.images[lightboxIdx]}
+              alt={post.caption || "post"}
+              className="max-w-full max-h-full object-contain select-none"
+              style={{ maxHeight: "90vh", maxWidth: "100vw" }}
+              draggable={false}
+            />
+          )}
+        </div>
+
+        {/* Prev arrow */}
+        {post.images.length > 1 && lightboxIdx > 0 && (
+          <button
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(255,255,255,0.2)" }}
+            onClick={e => { e.stopPropagation(); setLightboxIdx(i => i - 1); }}
+          >
+            <svg width="20" height="20" fill="none" stroke="white" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+        )}
+
+        {/* Next arrow */}
+        {post.images.length > 1 && lightboxIdx < post.images.length - 1 && (
+          <button
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(255,255,255,0.2)" }}
+            onClick={e => { e.stopPropagation(); setLightboxIdx(i => i + 1); }}
+          >
+            <svg width="20" height="20" fill="none" stroke="white" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        )}
+      </div>
+    )}
+    </>
   );
 }
