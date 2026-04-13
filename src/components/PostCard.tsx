@@ -510,8 +510,6 @@ export default function PostCard({ post, currentUserId, onUpdate }: {
 
       <style>{`@keyframes heartPop { 0%{transform:scale(0);opacity:1} 50%{transform:scale(1.3);opacity:1} 100%{transform:scale(1);opacity:0} }`}</style>
     </article>
-
-    {/* Lightbox */}
     {lightbox && (
       <div
         className="fixed inset-0 z-[999] flex items-center justify-center"
