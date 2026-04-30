@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@flydotio/litestream": "^1.0.1",
     "@libsql/client": "^0.8.1",
     "@prisma/adapter-libsql": "^5.22.0",
     "@prisma/client": "^5.22.0",
@@ -38,5 +39,8 @@
     "eslint-config-next": "16.2.2",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "dockerfile": {
+    "litestream": true
   }
 }
